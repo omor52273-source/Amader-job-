@@ -1,0 +1,52 @@
+# ========================================================
+# Amader Job Online - Apache Configuration for cPanel
+# ========================================================
+
+Options -Indexes
+Options +FollowSymLinks
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Block access to sensitive configuration, database and environment files
+  RewriteRule ^\.env.*$ - [F,L]
+  RewriteRule ^database\.sql$ - [F,L]
+  RewriteRule ^.*\.log$ - [F,L]
+  RewriteRule ^composer\.(json|lock)$ - [F,L]
+  RewriteRule ^package(-lock)?\.json$ - [F,L]
+  RewriteRule ^README\.md$ - [F,L]
+
+  # 2. Prevent script execution in uploads directory
+  RewriteRule ^uploads/.*\.php$ - [F,L]
+
+  # 3. Route API endpoints to api/index.php
+  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+  RewriteRule ^api$ api/index.php [QSA,L]
+
+  # 4. Allow direct access to admin panel
+  RewriteRule ^admin/?$ admin/index.php [QSA,L]
+
+  # 5. Serve existing static files and directories directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 6. Route all frontend SPA routes to index.php
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# MIME Types for ES modules and modern assets
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/css .css
+  AddType image/svg+xml .svg
+</IfModule>

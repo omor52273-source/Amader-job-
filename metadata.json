@@ -1,0 +1,6 @@
+{
+  "name": "Amader Job Online",
+  "description": "Amader Job Online - Micro-task marketplace platform for freelancers and employers in Bangladesh",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

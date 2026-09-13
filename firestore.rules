@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User Profiles
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+    // Jobs Marketplace
+    match /jobs/{jobId} {
+      allow read, write: if true;
+    }
+    // Task Submissions
+    match /submissions/{submissionId} {
+      allow read, write: if true;
+    }
+    // Transactions Ledger
+    match /transactions/{transactionId} {
+      allow read, write: if true;
+    }
+  }
+}
