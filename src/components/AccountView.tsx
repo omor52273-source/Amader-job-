@@ -53,7 +53,7 @@ import {
   Settings
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { UserProfile, Language, Currency, KycVerificationData, isUserBlueBadgeVerified } from '../types';
+import { UserProfile, Language, Currency, KycVerificationData, isUserBlueBadgeVerified, getBlueBadgeStatus } from '../types';
 import { FacebookVerifiedBadge } from './FacebookVerifiedBadge';
 
 interface AccountViewProps {
@@ -98,6 +98,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
 }) => {
   const isBn = language === 'bn';
   const hasBlueBadge = isUserBlueBadgeVerified(user);
+  const badgeStatus = getBlueBadgeStatus(user);
 
   // Modals state for each menu option
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -549,8 +550,12 @@ export const AccountView: React.FC<AccountViewProps> = ({
                         ? (isBn ? 'মাসিক সাবস্ক্রিপশন (৳৫০/মাস)' : 'Monthly Plan (৳50/mo)') 
                         : (isBn ? 'NID কার্ড দিয়ে ভেরিফাইড (ফ্রি)' : 'NID Verified (Free)')}
                   </p>
-                  <p className="text-[10.5px] text-blue-100 font-medium">
-                    {isBn ? 'প্রোফাইল স্ট্যাটাস: ব্লু টিক সক্রিয়' : 'Profile Status: Verified Check Active'}
+                  <p className={`text-[10.5px] font-bold ${badgeStatus.isExpired ? 'text-rose-200' : badgeStatus.isAboutToExpire ? 'text-amber-200' : 'text-blue-100'}`}>
+                    {badgeStatus.isExpired 
+                      ? (isBn ? 'স্ট্যাটাস: মেয়াদ শেষ (Expired)' : 'Status: Expired')
+                      : badgeStatus.isAboutToExpire
+                        ? (isBn ? `স্ট্যাটাস: শীঘ্রই শেষ হচ্ছে (${badgeStatus.daysRemaining} দিন বাকি)` : `Status: Expiring Soon (${badgeStatus.daysRemaining}d left)`)
+                        : (isBn ? 'প্রোফাইল স্ট্যাটাস: ব্লু টিক সক্রিয়' : 'Profile Status: Verified Check Active')}
                   </p>
                 </div>
               </div>

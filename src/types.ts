@@ -151,6 +151,7 @@ export interface UserProfile {
   blueBadgePlan?: 'monthly' | 'yearly';
   blueBadgePurchasedAt?: string;
   blueBadgeExpiresAt?: string;
+  blueAutoRenew?: boolean;
   twoFactorEnabled?: boolean;
   twoFactorPhone?: string;
   twoFactorVerifiedAt?: string;
@@ -251,15 +252,50 @@ export interface TopEarner {
   badge: string;
 }
 
+export interface BlueBadgeStatus {
+  isActive: boolean;
+  isExpired: boolean;
+  isAboutToExpire: boolean;
+  daysRemaining: number;
+}
+
+export const getBlueBadgeStatus = (user?: Partial<UserProfile> | null): BlueBadgeStatus => {
+  if (!user) return { isActive: false, isExpired: false, isAboutToExpire: false, daysRemaining: 0 };
+  
+  // If verified by NID (KYC) or permanent verification without expiry
+  if (user.kycStatus === 'verified' && !user.blueBadgeExpiresAt) {
+    return { isActive: true, isExpired: false, isAboutToExpire: false, daysRemaining: 999 };
+  }
+
+  if (!user.hasBlueBadge && !user.isVerified) {
+    return { isActive: false, isExpired: false, isAboutToExpire: false, daysRemaining: 0 };
+  }
+
+  if (!user.blueBadgeExpiresAt) {
+    return { isActive: true, isExpired: false, isAboutToExpire: false, daysRemaining: 30 };
+  }
+
+  const now = new Date();
+  const expiry = new Date(user.blueBadgeExpiresAt);
+  const diffTime = expiry.getTime() - now.getTime();
+  const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (daysRemaining < 0) {
+    return { isActive: false, isExpired: true, isAboutToExpire: false, daysRemaining: 0 };
+  }
+  if (daysRemaining <= 2) {
+    return { isActive: true, isExpired: false, isAboutToExpire: true, daysRemaining };
+  }
+  return { isActive: true, isExpired: false, isAboutToExpire: false, daysRemaining };
+};
+
 /**
  * Check if a user qualifies for the Blue Verified Badge:
- * Strictly backed by MySQL database status (has_blue_badge, is_verified, or kyc_status verified)
+ * Strictly backed by MySQL database status and valid expiry
  */
 export const isUserBlueBadgeVerified = (user?: Partial<UserProfile> | null): boolean => {
   if (!user) return false;
-  if (user.hasBlueBadge || user.isVerified || user.kycStatus === 'verified') {
-    return true;
-  }
-  return false;
+  const status = getBlueBadgeStatus(user);
+  return status.isActive;
 };
 

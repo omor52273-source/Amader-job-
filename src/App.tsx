@@ -631,7 +631,7 @@ export default function App() {
     return { success: true };
   };
 
-  const handleBuyBlueBadge = (plan: 'monthly' | 'yearly', balanceSource: 'deposit' | 'earning' = 'deposit') => {
+  const handleBuyBlueBadge = (plan: 'monthly' | 'yearly', balanceSource: 'deposit' | 'earning' = 'deposit', autoRenew: boolean = true) => {
     const costBDT = plan === 'yearly' ? 800 : 50;
     const costUSD = +(costBDT / 100).toFixed(2);
     const now = new Date();
@@ -662,6 +662,7 @@ export default function App() {
         blueBadgePlan: plan,
         blueBadgePurchasedAt: now.toISOString(),
         blueBadgeExpiresAt: expiry.toISOString(),
+        blueAutoRenew: autoRenew,
         earningBalanceBDT: newEarningBDT,
         earningBalanceUSD: newEarningUSD,
         depositBalanceBDT: newDepositBDT,
