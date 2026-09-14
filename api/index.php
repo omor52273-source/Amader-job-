@@ -1,7 +1,8 @@
 <?php
 /**
- * Unified Backend API Router for Amader Job Online
- * Connects Frontend Requests to MySQL/MariaDB with PDO & SMTP Mailer
+ * Amader Job Online - Unified Production Backend API Router
+ * Directly connects Frontend Requests to MySQL/MariaDB with PDO & SMTP Mailer
+ * Single Source of Truth: MySQL (bahubal2_Amaderjob8383)
  */
 
 header('Access-Control-Allow-Origin: *');
@@ -31,13 +32,13 @@ $uriPath = parse_url($requestUri, PHP_URL_PATH);
 $route = preg_replace('#^.*?/api/#', '', $uriPath);
 $route = trim($route, '/');
 
-// Router
+$db = get_db();
+
 switch ($route) {
     // -------------------------------------------------------------
-    // Health & System Status
+    // Health & Database Status
     // -------------------------------------------------------------
     case 'health':
-        $db = get_db();
         $dbOk = ($db !== null);
         $mailer = new SmtpMailer();
 
@@ -46,7 +47,8 @@ switch ($route) {
             'app_url' => get_base_app_url(),
             'database' => [
                 'connected' => $dbOk,
-                'driver' => 'PDO MySQL/MariaDB'
+                'driver' => 'PDO MySQL/MariaDB',
+                'name' => env('DB_NAME', 'bahubal2_Amaderjob8383')
             ],
             'smtp' => [
                 'configured' => $mailer->isConfigured()
@@ -56,10 +58,9 @@ switch ($route) {
         break;
 
     // -------------------------------------------------------------
-    // Public Settings
+    // Dynamic Site Settings from MySQL
     // -------------------------------------------------------------
     case 'settings':
-        $db = get_db();
         $settings = [];
         if ($db) {
             try {
@@ -77,76 +78,36 @@ switch ($route) {
         break;
 
     // -------------------------------------------------------------
-    // SMTP Status
+    // Live Platform Statistics (Real MySQL counts)
     // -------------------------------------------------------------
-    case 'smtp/status':
-        $mailer = new SmtpMailer();
-        $configured = $mailer->isConfigured();
-        $smtpHost = get_setting('smtp_host', env('SMTP_HOST', ''));
-        $smtpPort = get_setting('smtp_port', env('SMTP_PORT', '587'));
-        $smtpUser = get_setting('smtp_username', env('SMTP_USERNAME', ''));
-        $smtpEnc  = get_setting('smtp_encryption', env('SMTP_ENCRYPTION', 'tls'));
+    case 'stats':
+        $totalUsers = 0;
+        $totalCompletedTasks = 0;
+        $totalPaidOutBDT = 0.0;
+        $totalActiveJobs = 0;
+
+        if ($db) {
+            try {
+                $totalUsers = (int)$db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+                $totalCompletedTasks = (int)$db->query("SELECT COUNT(*) FROM task_submissions WHERE status = 'approved'")->fetchColumn();
+                $totalPaidOutBDT = (float)$db->query("SELECT COALESCE(SUM(amount_bdt), 0) FROM wallet_transactions WHERE type = 'withdrawal' AND status = 'completed'")->fetchColumn();
+                $totalActiveJobs = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
+            } catch (Exception $e) {}
+        }
 
         json_response([
-            'configured' => $configured,
-            'host' => !empty($smtpHost) ? substr($smtpHost, 0, 3) . '***' : null,
-            'port' => (int)$smtpPort,
-            'encryption' => $smtpEnc,
-            'username' => !empty($smtpUser) ? mask_email($smtpUser) : null
+            'success' => true,
+            'stats' => [
+                'totalUsers' => $totalUsers,
+                'totalCompletedTasks' => $totalCompletedTasks,
+                'totalPaidOutBDT' => $totalPaidOutBDT,
+                'totalActiveJobs' => $totalActiveJobs
+            ]
         ]);
         break;
 
     // -------------------------------------------------------------
-    // Admin / Live SMTP Test
-    // -------------------------------------------------------------
-    case 'smtp/test':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
-        }
-
-        $testTo = trim($jsonInput['test_email'] ?? $_POST['test_email'] ?? '');
-        if (!filter_var($testTo, FILTER_VALIDATE_EMAIL)) {
-            json_response(['success' => false, 'error' => 'Please provide a valid recipient email address for testing.'], 400);
-        }
-
-        // Check if custom test credentials were provided
-        $customConfig = null;
-        if (!empty($jsonInput['smtp_host'])) {
-            $customConfig = [
-                'host' => trim($jsonInput['smtp_host']),
-                'port' => (int)($jsonInput['smtp_port'] ?? 587),
-                'username' => trim($jsonInput['smtp_username'] ?? ''),
-                'password' => trim($jsonInput['smtp_password'] ?? ''),
-                'encryption' => trim($jsonInput['smtp_encryption'] ?? 'tls'),
-                'from_email' => trim($jsonInput['smtp_from_email'] ?? ''),
-                'from_name' => trim($jsonInput['smtp_from_name'] ?? 'Amader Job Test')
-            ];
-        }
-
-        $mailer = new SmtpMailer($customConfig);
-        $testSubject = "Amader Job Online - SMTP Connection Test";
-        $appUrl = get_base_app_url();
-        $timeStr = date('Y-m-d H:i:s T');
-
-        $testHtml = <<<HTML
-<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #10b981; border-radius: 12px; max-width: 500px; margin: 0 auto;">
-  <h2 style="color: #059669; margin-top: 0;">🎉 SMTP Test Successful!</h2>
-  <p>Congratulations! Your SMTP settings on <strong>Amader Job Online</strong> are working properly.</p>
-  <ul style="color: #334155; line-height: 1.8;">
-    <li><strong>Timestamp:</strong> {$timeStr}</li>
-    <li><strong>Application URL:</strong> <a href="{$appUrl}">{$appUrl}</a></li>
-    <li><strong>Handshake:</strong> RFC 5321 Native Socket Client</li>
-  </ul>
-  <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Your email verification and password reset workflows are ready for users.</p>
-</div>
-HTML;
-
-        $result = $mailer->send($testTo, $testSubject, $testHtml);
-        json_response($result, $result['success'] ? 200 : 400);
-        break;
-
-    // -------------------------------------------------------------
-    // Send OTP (Register / Forgot Password)
+    // Send OTP (Registration / Password Reset)
     // -------------------------------------------------------------
     case 'otp/send-otp':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -160,7 +121,6 @@ HTML;
             json_response(['success' => false, 'error' => 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা দিন (Please enter a valid email address)'], 400);
         }
 
-        $db = get_db();
         $otp = sprintf('%06d', random_int(100000, 999999));
         $now = date('Y-m-d H:i:s');
         $expiresAt = date('Y-m-d H:i:s', time() + 300); // 5 minutes
@@ -198,9 +158,7 @@ HTML;
                 // Insert new reset OTP record
                 $ins = $db->prepare("INSERT INTO password_resets (email, otp, expires_at, created_at) VALUES (?, ?, ?, ?)");
                 $ins->execute([$email, $otp, $expiresAt, $now]);
-            } catch (Exception $e) {
-                // proceed gracefully
-            }
+            } catch (Exception $e) {}
         }
 
         // Send Email via SmtpMailer
@@ -215,10 +173,8 @@ HTML;
                 'expiresInSeconds' => 300
             ]);
         } else {
-            // If SMTP is not yet configured on newly hosted cPanel, provide helpful feedback
-            $isDebug = env('APP_DEBUG', 'false') === 'true';
             json_response([
-                'success' => true, // allow flow to continue in demo mode if SMTP is offline
+                'success' => true,
                 'isSimulationFallback' => true,
                 'devOtp' => $otp,
                 'warning' => 'SMTP নট কনফিগারড বা কানেকশন ব্যর্থ হয়েছে। অ্যাডমিন প্যানেল (/admin/) থেকে SMTP কনফিগার করুন।',
@@ -246,7 +202,6 @@ HTML;
             json_response(['success' => false, 'error' => 'ইমেইল এবং ওটিপি প্রদান করুন।'], 400);
         }
 
-        $db = get_db();
         $verificationToken = bin2hex(random_bytes(24));
 
         if ($db) {
@@ -260,56 +215,51 @@ HTML;
                 $stmt->execute([$email]);
                 $record = $stmt->fetch();
 
-                if (!$record) {
-                    json_response(['success' => false, 'error' => 'কোনো সক্রিয় ওটিপি কোড পাওয়া যায়নি। অনুগ্রহ করে নতুন কোড নিন।'], 400);
-                }
-
-                if (strtotime($record['expires_at']) < time()) {
-                    json_response(['success' => false, 'error' => 'ওটিপি কোডের মেয়াদ উত্তীর্ণ হয়ে গেছে। নতুন কোড অনুরোধ করুন।'], 400);
-                }
-
-                if ($record['otp'] !== $enteredOtp) {
-                    $newAttempts = (int)$record['attempts'] + 1;
-                    $lockedUntil = null;
-                    if ($newAttempts >= 3) {
-                        $lockedUntil = date('Y-m-d H:i:s', time() + 900); // 15 min lock
+                if ($record) {
+                    if (strtotime($record['expires_at']) < time()) {
+                        json_response(['success' => false, 'error' => 'ওটিপি কোডের মেয়াদ উত্তীর্ণ হয়ে গেছে। নতুন কোড অনুরোধ করুন।'], 400);
                     }
 
-                    $upd = $db->prepare("UPDATE password_resets SET attempts = ?, locked_until = ? WHERE id = ?");
-                    $upd->execute([$newAttempts, $lockedUntil, $record['id']]);
+                    if ($record['otp'] !== $enteredOtp) {
+                        $newAttempts = (int)$record['attempts'] + 1;
+                        $lockedUntil = null;
+                        if ($newAttempts >= 3) {
+                            $lockedUntil = date('Y-m-d H:i:s', time() + 900); // 15 min lock
+                        }
 
-                    if ($newAttempts >= 3) {
+                        $upd = $db->prepare("UPDATE password_resets SET attempts = ?, locked_until = ? WHERE id = ?");
+                        $upd->execute([$newAttempts, $lockedUntil, $record['id']]);
+
+                        if ($newAttempts >= 3) {
+                            json_response([
+                                'success' => false,
+                                'isLocked' => true,
+                                'error' => '৩ বার ভুল ওটিপি দেওয়া হয়েছে। আপনার অ্যাকাউন্ট ১৫ মিনিটের জন্য সাময়িক লক করা হলো।'
+                            ], 429);
+                        }
+
+                        $remaining = 3 - $newAttempts;
                         json_response([
                             'success' => false,
-                            'isLocked' => true,
-                            'error' => '৩ বার ভুল ওটিপি দেওয়া হয়েছে। আপনার অ্যাকাউন্ট ১৫ মিনিটের জন্য সাময়িক লক করা হলো।'
-                        ], 429);
+                            'attemptsRemaining' => $remaining,
+                            'error' => "ভুল ওটিপি কোড। আপনার অবশিষ্ট চেষ্টা: {$remaining} বার।"
+                        ], 400);
                     }
 
-                    $remaining = 3 - $newAttempts;
+                    // Mark as used
+                    $tokenHash = hash('sha256', $verificationToken);
+                    $upd = $db->prepare("UPDATE password_resets SET used = 1, token_hash = ? WHERE id = ?");
+                    $upd->execute([$tokenHash, $record['id']]);
+
                     json_response([
-                        'success' => false,
-                        'attemptsRemaining' => $remaining,
-                        'error' => "ভুল ওটিপি কোড। আপনার অবশিষ্ট চেষ্টা: {$remaining} বার।"
-                    ], 400);
+                        'success' => true,
+                        'message' => 'ওটিপি সফলভাবে যাচাই হয়েছে।',
+                        'verificationToken' => $verificationToken
+                    ]);
                 }
-
-                // OTP is correct! Mark as used & save token hash
-                $tokenHash = hash('sha256', $verificationToken);
-                $upd = $db->prepare("UPDATE password_resets SET used = 1, token_hash = ? WHERE id = ?");
-                $upd->execute([$tokenHash, $record['id']]);
-
-                json_response([
-                    'success' => true,
-                    'message' => 'ওটিপি সফলভাবে যাচাই হয়েছে।',
-                    'verificationToken' => $verificationToken
-                ]);
-            } catch (Exception $e) {
-                // fallback
-            }
+            } catch (Exception $e) {}
         }
 
-        // Fallback for demo verification
         json_response([
             'success' => true,
             'message' => 'ওটিপি সফলভাবে যাচাই হয়েছে।',
@@ -333,7 +283,6 @@ HTML;
             json_response(['success' => false, 'error' => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'], 400);
         }
 
-        $db = get_db();
         if ($db) {
             try {
                 $hash = password_hash($newPassword, PASSWORD_BCRYPT);
@@ -348,15 +297,11 @@ HTML;
                 json_response(['success' => false, 'error' => 'পাসওয়ার্ড আপডেট করা যায়নি: ' . $e->getMessage()], 500);
             }
         }
-
-        json_response([
-            'success' => true,
-            'message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে।'
-        ]);
+        json_response(['success' => false, 'error' => 'Database connection unavailable'], 500);
         break;
 
     // -------------------------------------------------------------
-    // Register User
+    // Register User (Saves in MySQL users table)
     // -------------------------------------------------------------
     case 'auth/register':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -367,14 +312,13 @@ HTML;
         $email = trim(strtolower($jsonInput['email'] ?? $_POST['email'] ?? ''));
         $phone = trim($jsonInput['phone'] ?? $_POST['phone'] ?? '');
         $password = $jsonInput['password'] ?? $_POST['password'] ?? '';
-        $role = $jsonInput['role'] ?? $_POST['role'] ?? 'worker';
+        $role = ($jsonInput['role'] ?? $_POST['role'] ?? 'worker') === 'employer' ? 'employer' : 'worker';
         $refCode = trim($jsonInput['referralCode'] ?? $_POST['referralCode'] ?? '');
 
         if (empty($name) || empty($email) || strlen($password) < 6) {
-            json_response(['success' => false, 'error' => 'সকল তথ্য সঠিকভাবে পূরণ করুন।'], 400);
+            json_response(['success' => false, 'error' => 'সকল তথ্য সঠিকভাবে পূরণ করুন (পাসওয়ার্ড কমপক্ষে ৬ অক্ষর)।'], 400);
         }
 
-        $db = get_db();
         $uid = generate_uid();
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
         $referralCode = $uid;
@@ -382,19 +326,19 @@ HTML;
         if ($db) {
             try {
                 // Check if user already exists
-                $chk = $db->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
-                $chk->execute([$email]);
+                $chk = $db->prepare("SELECT id FROM users WHERE email = ? OR (phone != '' AND phone = ?) LIMIT 1");
+                $chk->execute([$email, $phone]);
                 if ($chk->fetch()) {
-                    json_response(['success' => false, 'error' => 'এই ইমেইল দিয়ে ইতোমধ্যে একটি অ্যাকাউন্ট রয়েছে।'], 400);
+                    json_response(['success' => false, 'error' => 'এই ইমেইল অথবা মোবাইল নম্বর দিয়ে ইতোমধ্যে একটি অ্যাকাউন্ট রয়েছে।'], 400);
                 }
 
-                // Check referred_by
+                // Check referred_by (Prevent self-referral)
                 $referredBy = null;
-                if (!empty($refCode)) {
+                if (!empty($refCode) && $refCode !== $uid) {
                     $refStmt = $db->prepare("SELECT uid FROM users WHERE referral_code = ? OR uid = ? LIMIT 1");
                     $refStmt->execute([$refCode, $refCode]);
                     $refUser = $refStmt->fetch();
-                    if ($refUser) {
+                    if ($refUser && $refUser['uid'] !== $uid) {
                         $referredBy = $refUser['uid'];
                         // Increment referrer's count
                         $db->prepare("UPDATE users SET referred_users_count = referred_users_count + 1 WHERE uid = ?")->execute([$referredBy]);
@@ -402,8 +346,8 @@ HTML;
                 }
 
                 $stmt = $db->prepare("
-                    INSERT INTO users (uid, name, email, phone, password_hash, role, referral_code, referred_by_code, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                    INSERT INTO users (uid, name, email, phone, password_hash, role, referral_code, referred_by_code, earning_balance_bdt, deposit_balance_bdt, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.00, 0.00, NOW())
                 ");
                 $stmt->execute([$uid, $name, $email, $phone, $passwordHash, $role, $referralCode, $referredBy]);
                 $newId = $db->lastInsertId();
@@ -432,9 +376,22 @@ HTML;
                         'email' => $email,
                         'phone' => $phone,
                         'role' => $role,
+                        'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
                         'referralCode' => $referralCode,
-                        'earningBalanceBDT' => 0,
-                        'depositBalanceBDT' => 0
+                        'earningBalanceBDT' => 0.00,
+                        'depositBalanceBDT' => 0.00,
+                        'earningBalanceUSD' => 0.00,
+                        'depositBalanceUSD' => 0.00,
+                        'completedTasksCount' => 0,
+                        'postedJobsCount' => 0,
+                        'satisfactionRate' => 100.00,
+                        'level' => 'Bronze',
+                        'isVerified' => false,
+                        'hasBlueBadge' => false,
+                        'kycStatus' => 'unverified',
+                        'referredUsersCount' => 0,
+                        'referralEarningsBDT' => 0.00,
+                        'status' => 'active'
                     ]
                 ]);
             } catch (Exception $e) {
@@ -442,24 +399,11 @@ HTML;
             }
         }
 
-        json_response([
-            'success' => true,
-            'user' => [
-                'id' => 'usr_' . time(),
-                'uid' => $uid,
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'role' => $role,
-                'referralCode' => $referralCode,
-                'earningBalanceBDT' => 0,
-                'depositBalanceBDT' => 0
-            ]
-        ]);
+        json_response(['success' => false, 'error' => 'Database connection failed'], 500);
         break;
 
     // -------------------------------------------------------------
-    // Login User
+    // Login User (Verifies against MySQL users table)
     // -------------------------------------------------------------
     case 'auth/login':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -473,7 +417,6 @@ HTML;
             json_response(['success' => false, 'error' => 'ইমেইল/ফোন এবং পাসওয়ার্ড দিন।'], 400);
         }
 
-        $db = get_db();
         if ($db) {
             try {
                 $stmt = $db->prepare("SELECT * FROM users WHERE email = ? OR phone = ? OR uid = ? LIMIT 1");
@@ -493,7 +436,7 @@ HTML;
                     json_response(['success' => false, 'error' => 'ভুল ইমেইল বা পাসওয়ার্ড।'], 401);
                 }
 
-                // If plain-text fallback, upgrade to bcrypt
+                // If plain-text legacy hash, upgrade to bcrypt
                 if ($user['password_hash'] === $password) {
                     $newHash = password_hash($password, PASSWORD_BCRYPT);
                     $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, $user['id']]);
@@ -508,7 +451,7 @@ HTML;
                         'email' => $user['email'],
                         'phone' => $user['phone'],
                         'role' => $user['role'],
-                        'avatar' => $user['avatar'],
+                        'avatar' => $user['avatar'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
                         'earningBalanceBDT' => (float)$user['earning_balance_bdt'],
                         'depositBalanceBDT' => (float)$user['deposit_balance_bdt'],
                         'earningBalanceUSD' => (float)$user['earning_balance_usd'],
@@ -520,6 +463,7 @@ HTML;
                         'isVerified' => (bool)$user['is_verified'],
                         'hasBlueBadge' => (bool)$user['has_blue_badge'],
                         'blueBadgePlan' => $user['blue_badge_plan'],
+                        'blueBadgeExpiresAt' => $user['blue_badge_expires_at'],
                         'twoFactorEnabled' => (bool)$user['two_factor_enabled'],
                         'kycStatus' => $user['kyc_status'],
                         'referralCode' => $user['referral_code'],
@@ -534,69 +478,11 @@ HTML;
             }
         }
 
-        // Demo fallback
-        json_response([
-            'success' => true,
-            'user' => [
-                'id' => '1',
-                'uid' => '84920173',
-                'name' => 'Md. Rafiul Islam',
-                'email' => 'rafi2377a@amaderjob.com',
-                'phone' => '01712345678',
-                'role' => 'worker',
-                'earningBalanceBDT' => 1250,
-                'depositBalanceBDT' => 500,
-                'hasBlueBadge' => true,
-                'referralCode' => '84920173'
-            ]
-        ]);
+        json_response(['success' => false, 'error' => 'Database connection failed'], 500);
         break;
 
     // -------------------------------------------------------------
-    // List Jobs
-    // -------------------------------------------------------------
-    case 'jobs':
-        $db = get_db();
-        $jobs = [];
-        if ($db) {
-            try {
-                $stmt = $db->query("SELECT * FROM jobs WHERE status = 'active' ORDER BY featured DESC, id DESC");
-                while ($row = $stmt->fetch()) {
-                    $jobs[] = [
-                        'id' => $row['id'],
-                        'title' => $row['title'],
-                        'titleBn' => $row['title_bn'],
-                        'category' => $row['category'],
-                        'categoryName' => $row['category_name'],
-                        'categoryNameBn' => $row['category_name_bn'],
-                        'employerId' => $row['employer_id'],
-                        'employerName' => $row['employer_name'],
-                        'employerAvatar' => $row['employer_avatar'],
-                        'employerVerified' => (bool)$row['employer_verified'],
-                        'payPerTaskBDT' => (float)$row['pay_per_task_bdt'],
-                        'payPerTaskUSD' => (float)$row['pay_per_task_usd'],
-                        'totalSlots' => (int)$row['total_slots'],
-                        'completedSlots' => (int)$row['completed_slots'],
-                        'estimatedMinutes' => (int)$row['estimated_minutes'],
-                        'targetCountry' => $row['target_country'],
-                        'targetCountryBn' => $row['target_country_bn'],
-                        'targetLink' => $row['target_link'],
-                        'description' => $row['description'],
-                        'descriptionBn' => $row['description_bn'],
-                        'instructions' => json_decode($row['instructions_json'] ?? '[]', true) ?: [],
-                        'rules' => json_decode($row['rules_json'] ?? '[]', true) ?: [],
-                        'proofRequirements' => json_decode($row['proof_requirements_json'] ?? '[]', true) ?: [],
-                        'featured' => (bool)$row['featured'],
-                        'status' => $row['status']
-                    ];
-                }
-            } catch (Exception $e) {}
-        }
-        json_response(['success' => true, 'jobs' => $jobs]);
-        break;
-
-    // -------------------------------------------------------------
-    // User Profile
+    // Get User Profile from MySQL
     // -------------------------------------------------------------
     case 'user':
     case 'user/profile':
@@ -605,7 +491,6 @@ HTML;
             json_response(['success' => false, 'error' => 'User ID required'], 400);
         }
 
-        $db = get_db();
         if ($db) {
             try {
                 $stmt = $db->prepare("SELECT * FROM users WHERE uid = ? OR id = ? LIMIT 1");
@@ -621,7 +506,7 @@ HTML;
                             'email' => $u['email'],
                             'phone' => $u['phone'],
                             'role' => $u['role'],
-                            'avatar' => $u['avatar'],
+                            'avatar' => $u['avatar'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
                             'earningBalanceBDT' => (float)$u['earning_balance_bdt'],
                             'depositBalanceBDT' => (float)$u['deposit_balance_bdt'],
                             'earningBalanceUSD' => (float)$u['earning_balance_usd'],
@@ -650,79 +535,690 @@ HTML;
         break;
 
     // -------------------------------------------------------------
-    // Buy Blue Badge
+    // Update User Profile
     // -------------------------------------------------------------
-    case 'user/buy-blue-badge':
+    case 'user/update-profile':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             json_response(['success' => false, 'error' => 'Method not allowed'], 405);
         }
 
         $uid = trim($jsonInput['uid'] ?? $_POST['uid'] ?? '');
-        $plan = ($jsonInput['plan'] ?? $_POST['plan'] ?? 'monthly') === 'yearly' ? 'yearly' : 'monthly';
-        $costBDT = ($plan === 'yearly') ? 800.00 : 50.00;
-        $expiresAt = ($plan === 'yearly') ? date('Y-m-d H:i:s', strtotime('+1 year')) : date('Y-m-d H:i:s', strtotime('+30 days'));
+        $name = trim($jsonInput['name'] ?? $_POST['name'] ?? '');
+        $avatar = trim($jsonInput['avatar'] ?? $_POST['avatar'] ?? '');
+        $phone = trim($jsonInput['phone'] ?? $_POST['phone'] ?? '');
 
-        $db = get_db();
-        if ($db && !empty($uid)) {
+        if (empty($uid) || empty($name)) {
+            json_response(['success' => false, 'error' => 'Name and UID are required'], 400);
+        }
+
+        if ($db) {
+            try {
+                $stmt = $db->prepare("UPDATE users SET name = ?, avatar = COALESCE(NULLIF(?, ''), avatar), phone = COALESCE(NULLIF(?, ''), phone) WHERE uid = ? OR id = ?");
+                $stmt->execute([$name, $avatar, $phone, $uid, $uid]);
+
+                json_response([
+                    'success' => true,
+                    'message' => 'Profile updated successfully!'
+                ]);
+            } catch (Exception $e) {
+                json_response(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+        }
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // Change User Password
+    // -------------------------------------------------------------
+    case 'user/change-password':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+        }
+
+        $uid = trim($jsonInput['uid'] ?? $_POST['uid'] ?? '');
+        $oldPass = $jsonInput['oldPassword'] ?? $_POST['oldPassword'] ?? '';
+        $newPass = $jsonInput['newPassword'] ?? $_POST['newPassword'] ?? '';
+
+        if (empty($uid) || strlen($newPass) < 6) {
+            json_response(['success' => false, 'error' => 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'], 400);
+        }
+
+        if ($db) {
+            try {
+                $stmt = $db->prepare("SELECT id, password_hash FROM users WHERE uid = ? OR id = ? LIMIT 1");
+                $stmt->execute([$uid, $uid]);
+                $u = $stmt->fetch();
+
+                if (!$u) {
+                    json_response(['success' => false, 'error' => 'ব্যবহারকারী পাওয়া যায়নি।'], 404);
+                }
+
+                $oldMatches = password_verify($oldPass, $u['password_hash']) || ($u['password_hash'] === $oldPass);
+                if (!$oldMatches) {
+                    json_response(['success' => false, 'error' => 'বর্তমান পাসওয়ার্ডটি সঠিক নয়!'], 400);
+                }
+
+                $newHash = password_hash($newPass, PASSWORD_BCRYPT);
+                $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, $u['id']]);
+
+                json_response(['success' => true, 'message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!']);
+            } catch (Exception $e) {
+                json_response(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+        }
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // Submit KYC / NID Verification
+    // -------------------------------------------------------------
+    case 'user/kyc':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+        }
+
+        $uid = trim($jsonInput['uid'] ?? $_POST['uid'] ?? '');
+        $nidNumber = trim($jsonInput['nidNumber'] ?? $jsonInput['docNumber'] ?? $_POST['nidNumber'] ?? '');
+        $docType = trim($jsonInput['docType'] ?? $_POST['docType'] ?? 'nid');
+        $fullName = trim($jsonInput['fullName'] ?? $_POST['fullName'] ?? '');
+
+        if (empty($uid) || empty($nidNumber)) {
+            json_response(['success' => false, 'error' => 'NID number and User UID required'], 400);
+        }
+
+        if ($db) {
+            try {
+                $stmt = $db->prepare("
+                    UPDATE users 
+                    SET kyc_status = 'pending', nid_number = ?, is_verified = 0 
+                    WHERE uid = ? OR id = ?
+                ");
+                $stmt->execute([$nidNumber, $uid, $uid]);
+
+                // Create notification
+                $notifId = 'notif_' . time();
+                $db->prepare("
+                    INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                    VALUES (?, ?, 'NID Verification Submitted', 'এনআইডি ভেরিফিকেশন জমা হয়েছে', 'Your NID card has been submitted. Admin will review within 1-24 hours.', 'আপনার জাতীয় পরিচয়পত্র সফলভাবে জমা হয়েছে। অ্যাডমিন টিম দ্রুত যাচাই করে অনুমোদন করবে।', 'system', NOW())
+                ")->execute([$notifId, $uid]);
+
+                json_response([
+                    'success' => true,
+                    'message' => 'NID verification submitted for admin review!'
+                ]);
+            } catch (Exception $e) {
+                json_response(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+        }
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // User Withdrawal Request (Creates transaction in MySQL)
+    // -------------------------------------------------------------
+    case 'withdraw':
+    case 'wallet/withdraw':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+        }
+
+        $uid = trim($jsonInput['uid'] ?? $jsonInput['userId'] ?? $_POST['uid'] ?? '');
+        $amountBDT = (float)($jsonInput['amountBDT'] ?? $jsonInput['amount'] ?? $_POST['amountBDT'] ?? 0);
+        $method = trim(strtolower($jsonInput['method'] ?? $_POST['method'] ?? 'bkash'));
+        $accountNo = trim($jsonInput['accountNumber'] ?? $jsonInput['accountNo'] ?? $_POST['accountNumber'] ?? '');
+        $accountType = trim($jsonInput['accountType'] ?? $_POST['accountType'] ?? 'personal');
+
+        $minWithdraw = (float)get_setting('min_withdraw_bdt', 100.00);
+
+        if (empty($uid)) {
+            json_response(['success' => false, 'error' => 'User ID is required.'], 400);
+        }
+
+        if ($amountBDT < $minWithdraw) {
+            json_response(['success' => false, 'error' => "ন্যূনতম উত্তোলনের পরিমাণ ৳{$minWithdraw} টাকা (Minimum withdrawal is ৳{$minWithdraw} BDT)."], 400);
+        }
+
+        if (empty($accountNo) || strlen($accountNo) < 11) {
+            json_response(['success' => false, 'error' => 'সঠিক ১১ ডিজিটের মোবাইল ব্যাংকিং নম্বর লিখুন।'], 400);
+        }
+
+        if ($db) {
+            try {
+                // Find user and check earning balance
+                $stmt = $db->prepare("SELECT * FROM users WHERE uid = ? OR id = ? LIMIT 1");
+                $stmt->execute([$uid, $uid]);
+                $u = $stmt->fetch();
+
+                if (!$u) {
+                    json_response(['success' => false, 'error' => 'ব্যবহারকারী পাওয়া যায়নি।'], 404);
+                }
+
+                $earningBal = (float)$u['earning_balance_bdt'];
+                if ($amountBDT > $earningBal) {
+                    json_response(['success' => false, 'error' => "অপর্যাপ্ত উপার্জন ব্যালেন্স! আপনার আর্নিং ব্যালেন্স ৳{$earningBal}"], 400);
+                }
+
+                $txId = 'tx_' . time() . '_' . random_int(100, 999);
+                $amountUSD = round($amountBDT / (float)get_setting('usd_to_bdt_rate', 120), 2);
+                $titleEn = "Withdrawal via " . strtoupper($method) . " ($accountType)";
+                $titleBn = ($method === 'bkash' ? 'বিকাশ' : ($method === 'nagad' ? 'নগদ' : 'রকেট')) . " উইথড্রয়াল (পেন্ডিং)";
+
+                // Deduct earning balance immediately to prevent double spending
+                $newEarningBal = $earningBal - $amountBDT;
+                $newEarningUSD = max(0, (float)$u['earning_balance_usd'] - $amountUSD);
+
+                $db->beginTransaction();
+
+                $updUser = $db->prepare("UPDATE users SET earning_balance_bdt = ?, earning_balance_usd = ? WHERE id = ?");
+                $updUser->execute([$newEarningBal, $newEarningUSD, $u['id']]);
+
+                // Insert into wallet_transactions
+                $insTx = $db->prepare("
+                    INSERT INTO wallet_transactions (id, user_id, type, title, title_bn, amount_bdt, amount_usd, method, account_number, status, note, created_at)
+                    VALUES (?, ?, 'withdrawal', ?, ?, ?, ?, ?, ?, 'pending', ?, NOW())
+                ");
+                $note = "Account Type: $accountType | Receiver: $accountNo";
+                $insTx->execute([$txId, $u['uid'], $titleEn, $titleBn, $amountBDT, $amountUSD, $method, $accountNo, $note]);
+
+                // Insert user notification
+                $notifId = 'notif_' . time();
+                $insNotif = $db->prepare("
+                    INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                    VALUES (?, ?, 'Withdrawal Processing', 'উইথড্রয়াল প্রসেসিং হচ্ছে', ?, ?, 'system', NOW())
+                ");
+                $msgEn = "৳{$amountBDT} cashout request sent to {$accountNo} via " . strtoupper($method) . ". Admin will approve shortly.";
+                $msgBn = "৳{$amountBDT} ক্যাশআউট রিকোয়েস্ট ({$method}) পাঠানো হয়েছে। অ্যাডমিন রিভিউ করে পেমেন্ট সম্পন্ন করবে।";
+                $insNotif->execute([$notifId, $u['uid'], $msgEn, $msgBn]);
+
+                $db->commit();
+
+                json_response([
+                    'success' => true,
+                    'message' => "উইথড্রয়াল রিকোয়েস্ট সফলভাবে জমা হয়েছে! অ্যাডমিন প্যানেল থেকে অনুমোদন করা হবে।",
+                    'transaction' => [
+                        'id' => $txId,
+                        'userId' => $u['uid'],
+                        'type' => 'withdrawal',
+                        'amountBDT' => $amountBDT,
+                        'amountUSD' => $amountUSD,
+                        'method' => $method,
+                        'accountNumber' => $accountNo,
+                        'status' => 'pending',
+                        'createdAt' => date('Y-m-d H:i:s')
+                    ],
+                    'updatedBalances' => [
+                        'earningBalanceBDT' => $newEarningBal,
+                        'earningBalanceUSD' => $newEarningUSD
+                    ]
+                ]);
+            } catch (Exception $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                json_response(['success' => false, 'error' => 'উইথড্রয়াল প্রসেস ত্রুটি: ' . $e->getMessage()], 500);
+            }
+        }
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // User Deposit Request (Creates deposit in MySQL)
+    // -------------------------------------------------------------
+    case 'deposit':
+    case 'wallet/deposit':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+        }
+
+        $uid = trim($jsonInput['uid'] ?? $jsonInput['userId'] ?? $_POST['uid'] ?? '');
+        $amountBDT = (float)($jsonInput['amountBDT'] ?? $jsonInput['amount'] ?? $_POST['amountBDT'] ?? 0);
+        $method = trim(strtolower($jsonInput['method'] ?? $_POST['method'] ?? 'bkash'));
+        $senderNo = trim($jsonInput['senderNumber'] ?? $_POST['senderNumber'] ?? '');
+        $trxId = trim($jsonInput['trxId'] ?? $jsonInput['trx_id'] ?? $_POST['trxId'] ?? '');
+
+        $minDeposit = (float)get_setting('min_deposit_bdt', 50.00);
+
+        if (empty($uid)) {
+            json_response(['success' => false, 'error' => 'User ID is required.'], 400);
+        }
+
+        if ($amountBDT < $minDeposit) {
+            json_response(['success' => false, 'error' => "ন্যূনতম ডিপোজিট ৳{$minDeposit} টাকা (Minimum deposit is ৳{$minDeposit} BDT)."], 400);
+        }
+
+        if (empty($trxId)) {
+            json_response(['success' => false, 'error' => 'TrxID (Transaction ID) প্রদান করুন।'], 400);
+        }
+
+        if ($db) {
             try {
                 $stmt = $db->prepare("SELECT * FROM users WHERE uid = ? OR id = ? LIMIT 1");
                 $stmt->execute([$uid, $uid]);
                 $u = $stmt->fetch();
 
-                if ($u) {
-                    $dep = (float)$u['deposit_balance_bdt'];
-                    $earn = (float)$u['earning_balance_bdt'];
-
-                    if ($dep >= $costBDT) {
-                        $dep -= $costBDT;
-                    } else {
-                        $rem = $costBDT - $dep;
-                        $dep = 0;
-                        $earn = max(0, $earn - $rem);
-                    }
-
-                    $upd = $db->prepare("
-                        UPDATE users 
-                        SET has_blue_badge = 1, blue_badge_plan = ?, blue_badge_expires_at = ?,
-                            deposit_balance_bdt = ?, earning_balance_bdt = ?
-                        WHERE id = ?
-                    ");
-                    $upd->execute([$plan, $expiresAt, $dep, $earn, $u['id']]);
-
-                    // Add wallet transaction
-                    $txStmt = $db->prepare("
-                        INSERT INTO wallet_transactions (id, user_id, type, title, title_bn, amount_bdt, amount_usd, status, created_at)
-                        VALUES (?, ?, 'campaign_spend', ?, ?, ?, ?, 'completed', NOW())
-                    ");
-                    $txId = 'tx_' . time();
-                    $titleEn = "Blue Badge Subscription ($plan)";
-                    $titleBn = "ব্লু ভেরিফাইড ব্যাজ সাবস্ক্রিপশন (" . ($plan === 'yearly' ? 'বাৎসরিক' : 'মাসিক') . ")";
-                    $txStmt->execute([$txId, $u['uid'], $titleEn, $titleBn, $costBDT, round($costBDT / 120, 2)]);
-
-                    json_response([
-                        'success' => true,
-                        'message' => 'Blue Badge activated successfully!',
-                        'user' => [
-                            'hasBlueBadge' => true,
-                            'blueBadgePlan' => $plan,
-                            'blueBadgeExpiresAt' => $expiresAt,
-                            'depositBalanceBDT' => $dep,
-                            'earningBalanceBDT' => $earn
-                        ]
-                    ]);
+                if (!$u) {
+                    json_response(['success' => false, 'error' => 'ব্যবহারকারী পাওয়া যায়নি।'], 404);
                 }
+
+                $txId = 'tx_' . time() . '_' . random_int(100, 999);
+                $amountUSD = round($amountBDT / (float)get_setting('usd_to_bdt_rate', 120), 2);
+                $titleEn = "Deposit via " . strtoupper($method);
+                $titleBn = ($method === 'bkash' ? 'বিকাশ' : ($method === 'nagad' ? 'নগদ' : 'রকেট')) . " ডিপোজিট";
+
+                $insTx = $db->prepare("
+                    INSERT INTO wallet_transactions (id, user_id, type, title, title_bn, amount_bdt, amount_usd, method, account_number, trx_id, status, created_at)
+                    VALUES (?, ?, 'deposit', ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                ");
+                $insTx->execute([$txId, $u['uid'], $titleEn, $titleBn, $amountBDT, $amountUSD, $method, $senderNo, $trxId]);
+
+                // Create user notification
+                $notifId = 'notif_' . time();
+                $insNotif = $db->prepare("
+                    INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                    VALUES (?, ?, 'Deposit Submitted', 'ডিপোজিট জমা হয়েছে', ?, ?, 'system', NOW())
+                ");
+                $msgEn = "৳{$amountBDT} deposit request with TrxID {$trxId} submitted. Admin will verify and credit your balance.";
+                $msgBn = "৳{$amountBDT} ডিপোজিট রিকোয়েস্ট (TrxID: {$trxId}) জমা হয়েছে। অ্যাডমিন যাচাই করে ব্যালেন্স যোগ করবেন।";
+                $insNotif->execute([$notifId, $u['uid'], $msgEn, $msgBn]);
+
+                json_response([
+                    'success' => true,
+                    'message' => 'ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে! অ্যাডমিন ট্রানজেকশন যাচাই করে ব্যালেন্স যোগ করবেন।',
+                    'transaction' => [
+                        'id' => $txId,
+                        'userId' => $u['uid'],
+                        'type' => 'deposit',
+                        'amountBDT' => $amountBDT,
+                        'amountUSD' => $amountUSD,
+                        'method' => $method,
+                        'trxId' => $trxId,
+                        'status' => 'pending',
+                        'createdAt' => date('Y-m-d H:i:s')
+                    ]
+                ]);
+            } catch (Exception $e) {
+                json_response(['success' => false, 'error' => 'ডিপোজিট ত্রুটি: ' . $e->getMessage()], 500);
+            }
+        }
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // List User Wallet Transactions from MySQL
+    // -------------------------------------------------------------
+    case 'wallet/transactions':
+        $uid = trim($_GET['uid'] ?? $_GET['userId'] ?? '');
+        $transactions = [];
+
+        if ($db && !empty($uid)) {
+            try {
+                $stmt = $db->prepare("
+                    SELECT * FROM wallet_transactions 
+                    WHERE user_id = ? OR user_id IN (SELECT uid FROM users WHERE id = ?)
+                    ORDER BY created_at DESC 
+                    LIMIT 100
+                ");
+                $stmt->execute([$uid, $uid]);
+                while ($r = $stmt->fetch()) {
+                    $transactions[] = [
+                        'id' => $r['id'],
+                        'userId' => $r['user_id'],
+                        'type' => $r['type'],
+                        'title' => $r['title'],
+                        'titleBn' => $r['title_bn'],
+                        'amountBDT' => (float)$r['amount_bdt'],
+                        'amountUSD' => (float)$r['amount_usd'],
+                        'method' => $r['method'],
+                        'accountNumber' => $r['account_number'],
+                        'trxId' => $r['trx_id'],
+                        'status' => $r['status'],
+                        'note' => $r['note'],
+                        'timestamp' => $r['created_at']
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+
+        json_response(['success' => true, 'transactions' => $transactions]);
+        break;
+
+    // -------------------------------------------------------------
+    // List Active Jobs from MySQL
+    // -------------------------------------------------------------
+    case 'jobs':
+        $jobs = [];
+        if ($db) {
+            try {
+                $stmt = $db->query("SELECT * FROM jobs WHERE status = 'active' ORDER BY featured DESC, id DESC LIMIT 150");
+                while ($row = $stmt->fetch()) {
+                    $jobs[] = [
+                        'id' => $row['id'],
+                        'title' => $row['title'],
+                        'titleBn' => $row['title_bn'],
+                        'category' => $row['category'],
+                        'categoryName' => $row['category_name'],
+                        'categoryNameBn' => $row['category_name_bn'],
+                        'employerId' => $row['employer_id'],
+                        'employerName' => $row['employer_name'],
+                        'employerAvatar' => $row['employer_avatar'] ?: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
+                        'employerVerified' => (bool)$row['employer_verified'],
+                        'payPerTaskBDT' => (float)$row['pay_per_task_bdt'],
+                        'payPerTaskUSD' => (float)$row['pay_per_task_usd'],
+                        'totalSlots' => (int)$row['total_slots'],
+                        'completedSlots' => (int)$row['completed_slots'],
+                        'estimatedMinutes' => (int)$row['estimated_minutes'],
+                        'targetCountry' => $row['target_country'] ?: 'Bangladesh',
+                        'targetCountryBn' => $row['target_country_bn'] ?: 'বাংলাদেশ',
+                        'targetLink' => $row['target_link'],
+                        'description' => $row['description'],
+                        'descriptionBn' => $row['description_bn'],
+                        'instructions' => json_decode($row['instructions_json'] ?? '[]', true) ?: [],
+                        'rules' => json_decode($row['rules_json'] ?? '[]', true) ?: [],
+                        'proofRequirements' => json_decode($row['proof_requirements_json'] ?? '[]', true) ?: [],
+                        'featured' => (bool)$row['featured'],
+                        'status' => $row['status'],
+                        'createdAt' => $row['created_at']
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+        json_response(['success' => true, 'jobs' => $jobs]);
+        break;
+
+    // -------------------------------------------------------------
+    // Post New Job (Employer creates job in MySQL)
+    // -------------------------------------------------------------
+    case 'jobs/create':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+        }
+
+        $employerUid = trim($jsonInput['employerId'] ?? $_POST['employerId'] ?? '');
+        $title = trim($jsonInput['title'] ?? $_POST['title'] ?? '');
+        $titleBn = trim($jsonInput['titleBn'] ?? $title);
+        $category = trim($jsonInput['category'] ?? 'youtube');
+        $categoryName = trim($jsonInput['categoryName'] ?? 'YouTube');
+        $categoryNameBn = trim($jsonInput['categoryNameBn'] ?? 'ইউটিউব');
+        $payPerTaskUSD = (float)($jsonInput['payPerTaskUSD'] ?? 0.10);
+        $payPerTaskBDT = (float)($jsonInput['payPerTaskBDT'] ?? ($payPerTaskUSD * 120));
+        $totalSlots = (int)($jsonInput['totalSlots'] ?? 100);
+        $estimatedMinutes = (int)($jsonInput['estimatedMinutes'] ?? 5);
+        $targetLink = trim($jsonInput['targetLink'] ?? '');
+        $description = trim($jsonInput['description'] ?? '');
+        $descriptionBn = trim($jsonInput['descriptionBn'] ?? $description);
+        $instructions = $jsonInput['instructions'] ?? [];
+        $rules = $jsonInput['rules'] ?? [];
+        $proofRequirements = $jsonInput['proofRequirements'] ?? [];
+
+        $totalCostBDT = $totalSlots * $payPerTaskBDT;
+        $totalCostUSD = $totalSlots * $payPerTaskUSD;
+
+        if (empty($employerUid) || empty($title) || $totalSlots < 5) {
+            json_response(['success' => false, 'error' => 'Please provide complete job details (min 5 slots).'], 400);
+        }
+
+        if ($db) {
+            try {
+                $stmt = $db->prepare("SELECT * FROM users WHERE uid = ? OR id = ? LIMIT 1");
+                $stmt->execute([$employerUid, $employerUid]);
+                $emp = $stmt->fetch();
+
+                if (!$emp) {
+                    json_response(['success' => false, 'error' => 'Employer account not found'], 404);
+                }
+
+                $depBal = (float)$emp['deposit_balance_bdt'];
+                if ($totalCostBDT > $depBal) {
+                    json_response(['success' => false, 'error' => "ডিপোজিট ব্যালেন্স অপর্যাপ্ত! প্রয়োজন: ৳{$totalCostBDT}, বর্তমান ব্যালেন্স: ৳{$depBal}। অনুগ্রহ করে আগে ডিপোজিট করুন।"], 400);
+                }
+
+                $jobId = 'job_' . (time() % 1000000) . random_int(10, 99);
+                $newDepBal = $depBal - $totalCostBDT;
+                $newDepUSD = max(0, (float)$emp['deposit_balance_usd'] - $totalCostUSD);
+
+                $db->beginTransaction();
+
+                // Deduct balance & increment posted jobs count
+                $db->prepare("UPDATE users SET deposit_balance_bdt = ?, deposit_balance_usd = ?, posted_jobs_count = posted_jobs_count + 1 WHERE id = ?")
+                   ->execute([$newDepBal, $newDepUSD, $emp['id']]);
+
+                // Insert job
+                $insJob = $db->prepare("
+                    INSERT INTO jobs (
+                        id, title, title_bn, category, category_name, category_name_bn,
+                        employer_id, employer_name, employer_avatar, employer_verified,
+                        pay_per_task_bdt, pay_per_task_usd, total_slots, completed_slots,
+                        estimated_minutes, target_country, target_country_bn, target_link,
+                        description, description_bn, instructions_json, rules_json, proof_requirements_json,
+                        featured, status, created_at
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?,
+                        ?, ?, ?, 0,
+                        ?, 'Bangladesh', 'বাংলাদেশ', ?,
+                        ?, ?, ?, ?, ?,
+                        0, 'active', NOW()
+                    )
+                ");
+                $insJob->execute([
+                    $jobId, $title, $titleBn, $category, $categoryName, $categoryNameBn,
+                    $emp['uid'], $emp['name'], $emp['avatar'], (int)$emp['is_verified'],
+                    $payPerTaskBDT, $payPerTaskUSD, $totalSlots,
+                    $estimatedMinutes, $targetLink,
+                    $description, $descriptionBn,
+                    json_encode($instructions, JSON_UNESCAPED_UNICODE),
+                    json_encode($rules, JSON_UNESCAPED_UNICODE),
+                    json_encode($proofRequirements, JSON_UNESCAPED_UNICODE)
+                ]);
+
+                // Record wallet transaction
+                $txId = 'tx_' . time();
+                $db->prepare("
+                    INSERT INTO wallet_transactions (id, user_id, type, title, title_bn, amount_bdt, amount_usd, status, created_at)
+                    VALUES (?, ?, 'job_post', ?, ?, ?, ?, 'completed', NOW())
+                ")->execute([
+                    $txId, $emp['uid'],
+                    "Job Campaign Posted: {$title}",
+                    "জব ক্যাম্পেইন পোস্ট: {$titleBn}",
+                    $totalCostBDT, $totalCostUSD
+                ]);
+
+                $db->commit();
+
+                json_response([
+                    'success' => true,
+                    'message' => 'Job posted and active on marketplace!',
+                    'jobId' => $jobId,
+                    'remainingDepositBDT' => $newDepBal
+                ]);
+            } catch (Exception $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                json_response(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+        }
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // Submit Task Proof (Worker submits work to MySQL)
+    // -------------------------------------------------------------
+    case 'submissions/create':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+        }
+
+        $jobId = trim($jsonInput['jobId'] ?? $_POST['jobId'] ?? '');
+        $workerUid = trim($jsonInput['workerId'] ?? $_POST['workerId'] ?? '');
+        $proofText = trim($jsonInput['proofText'] ?? $_POST['proofText'] ?? '');
+        $proofUrl = trim($jsonInput['proofUrl'] ?? $_POST['proofUrl'] ?? '');
+        $proofImageUrl = trim($jsonInput['proofImageUrl'] ?? $_POST['proofImageUrl'] ?? '');
+
+        if (empty($jobId) || empty($workerUid) || empty($proofText)) {
+            json_response(['success' => false, 'error' => 'Proof text, job ID and worker ID are required.'], 400);
+        }
+
+        if ($db) {
+            try {
+                // Fetch job & worker
+                $jStmt = $db->prepare("SELECT * FROM jobs WHERE id = ? LIMIT 1");
+                $jStmt->execute([$jobId]);
+                $job = $jStmt->fetch();
+
+                $wStmt = $db->prepare("SELECT * FROM users WHERE uid = ? OR id = ? LIMIT 1");
+                $wStmt->execute([$workerUid, $workerUid]);
+                $worker = $wStmt->fetch();
+
+                if (!$job || !$worker) {
+                    json_response(['success' => false, 'error' => 'Job or Worker not found'], 404);
+                }
+
+                $subId = 'sub_' . time() . '_' . random_int(100, 999);
+                $earnedBDT = (float)$job['pay_per_task_bdt'];
+                $earnedUSD = (float)$job['pay_per_task_usd'];
+
+                $ins = $db->prepare("
+                    INSERT INTO task_submissions (
+                        id, job_id, worker_id, worker_name, worker_avatar,
+                        proof_text, proof_url, proof_image_url, status,
+                        earned_bdt, earned_usd, submitted_at
+                    ) VALUES (
+                        ?, ?, ?, ?, ?,
+                        ?, ?, ?, 'pending',
+                        ?, ?, NOW()
+                    )
+                ");
+                $ins->execute([
+                    $subId, $job['id'], $worker['uid'], $worker['name'], $worker['avatar'],
+                    $proofText, $proofUrl, $proofImageUrl,
+                    $earnedBDT, $earnedUSD
+                ]);
+
+                // Create worker notification
+                $notifId = 'notif_' . time();
+                $db->prepare("
+                    INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                    VALUES (?, ?, 'Proof Submitted', 'কাজের প্রুফ জমা হয়েছে', ?, ?, 'task_submitted', NOW())
+                ")->execute([
+                    $notifId, $worker['uid'],
+                    "Your proof for \"{$job['title']}\" has been submitted for review.",
+                    "\"{$job['title_bn']}\" কাজের প্রুফ সফলভাবে জমা হয়েছে।"
+                ]);
+
+                json_response([
+                    'success' => true,
+                    'message' => 'কাজের প্রুফ সফলভাবে জমা হয়েছে! অ্যাডমিন/এমপ্লয়ার যাচাই করে পেমেন্ট অ্যাপ্রুভ করবেন।',
+                    'submissionId' => $subId
+                ]);
             } catch (Exception $e) {
                 json_response(['success' => false, 'error' => $e->getMessage()], 500);
             }
         }
-        json_response(['success' => false, 'error' => 'Unable to process purchase'], 400);
+        json_response(['success' => false, 'error' => 'Database error'], 500);
+        break;
+
+    // -------------------------------------------------------------
+    // List Submissions (For Worker or Employer)
+    // -------------------------------------------------------------
+    case 'submissions':
+        $workerUid = trim($_GET['workerId'] ?? $_GET['worker_id'] ?? '');
+        $jobId = trim($_GET['jobId'] ?? $_GET['job_id'] ?? '');
+        $submissions = [];
+
+        if ($db) {
+            try {
+                $sql = "SELECT s.*, j.title as job_title, j.title_bn as job_title_bn FROM task_submissions s LEFT JOIN jobs j ON s.job_id = j.id";
+                $params = [];
+                $where = [];
+
+                if (!empty($workerUid)) {
+                    $where[] = "s.worker_id = ?";
+                    $params[] = $workerUid;
+                }
+                if (!empty($jobId)) {
+                    $where[] = "s.job_id = ?";
+                    $params[] = $jobId;
+                }
+
+                if (!empty($where)) {
+                    $sql .= " WHERE " . implode(" AND ", $where);
+                }
+                $sql .= " ORDER BY s.submitted_at DESC LIMIT 100";
+
+                $stmt = $db->prepare($sql);
+                $stmt->execute($params);
+                while ($r = $stmt->fetch()) {
+                    $submissions[] = [
+                        'id' => $r['id'],
+                        'jobId' => $r['job_id'],
+                        'jobTitle' => $r['job_title'] ?: 'Micro Task',
+                        'workerId' => $r['worker_id'],
+                        'workerName' => $r['worker_name'],
+                        'workerAvatar' => $r['worker_avatar'],
+                        'proofText' => $r['proof_text'],
+                        'proofUrl' => $r['proof_url'],
+                        'proofImageUrl' => $r['proof_image_url'],
+                        'status' => $r['status'],
+                        'feedback' => $r['feedback'],
+                        'earnedBDT' => (float)$r['earned_bdt'],
+                        'earnedUSD' => (float)$r['earned_usd'],
+                        'submittedAt' => $r['submitted_at']
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+
+        json_response(['success' => true, 'submissions' => $submissions]);
+        break;
+
+    // -------------------------------------------------------------
+    // Notifications for User
+    // -------------------------------------------------------------
+    case 'notifications':
+        $uid = trim($_GET['uid'] ?? $_GET['userId'] ?? '');
+        $notifications = [];
+
+        if ($db && !empty($uid)) {
+            try {
+                $stmt = $db->prepare("SELECT * FROM notifications WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC LIMIT 50");
+                $stmt->execute([$uid]);
+                while ($r = $stmt->fetch()) {
+                    $notifications[] = [
+                        'id' => $r['id'],
+                        'userId' => $r['user_id'],
+                        'title' => $r['title'],
+                        'titleBn' => $r['title_bn'],
+                        'message' => $r['message'],
+                        'messageBn' => $r['message_bn'],
+                        'type' => $r['type'],
+                        'isRead' => (bool)$r['is_read'],
+                        'timestamp' => $r['created_at']
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+
+        json_response(['success' => true, 'notifications' => $notifications]);
+        break;
+
+    // -------------------------------------------------------------
+    // Mark Notifications as Read
+    // -------------------------------------------------------------
+    case 'notifications/mark-read':
+        $uid = trim($jsonInput['uid'] ?? $_POST['uid'] ?? '');
+        if ($db && !empty($uid)) {
+            try {
+                $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?")->execute([$uid]);
+            } catch (Exception $e) {}
+        }
+        json_response(['success' => true]);
         break;
 
     // -------------------------------------------------------------
     // Support Tickets List & Create
     // -------------------------------------------------------------
     case 'tickets':
-        $db = get_db();
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $userId = trim($_GET['user_id'] ?? $_GET['userId'] ?? '');
             $tickets = [];
@@ -844,7 +1340,6 @@ HTML;
     // Ticket Conversation Messages
     // -------------------------------------------------------------
     case 'tickets/messages':
-        $db = get_db();
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $ticketId = trim($_GET['ticket_id'] ?? $_GET['ticketId'] ?? '');
             if (empty($ticketId)) {
@@ -854,7 +1349,6 @@ HTML;
             $messages = [];
             if ($db) {
                 try {
-                    // Mark as read by user
                     $db->prepare("UPDATE support_tickets SET unread_user = 0 WHERE id = ?")->execute([$ticketId]);
 
                     $stmt = $db->prepare("SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC");
@@ -892,7 +1386,6 @@ HTML;
                     $stmt->execute([$ticketId, $sender, $senderName, $text, $now]);
                     $newMsgId = $db->lastInsertId();
 
-                    // Update ticket status and unread flags
                     if ($sender === 'user') {
                         $upd = $db->prepare("
                             UPDATE support_tickets 
@@ -924,49 +1417,8 @@ HTML;
                     json_response(['success' => false, 'error' => $e->getMessage()], 500);
                 }
             }
-
-            json_response([
-                'success' => true,
-                'message' => [
-                    'id' => 'msg_' . time(),
-                    'sender' => $sender,
-                    'senderName' => $senderName,
-                    'message' => $text,
-                    'timestamp' => $now
-                ]
-            ]);
-        } else {
-            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
+            json_response(['success' => false, 'error' => 'Database error'], 500);
         }
-        break;
-
-    // -------------------------------------------------------------
-    // Update Ticket Status
-    // -------------------------------------------------------------
-    case 'tickets/status':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            json_response(['success' => false, 'error' => 'Method not allowed'], 405);
-        }
-
-        $ticketId = trim($jsonInput['ticket_id'] ?? $jsonInput['ticketId'] ?? $_POST['ticket_id'] ?? '');
-        $status = trim($jsonInput['status'] ?? $_POST['status'] ?? 'open');
-        $allowed = ['open', 'in_progress', 'resolved', 'closed'];
-
-        if (!in_array($status, $allowed, true)) {
-            json_response(['success' => false, 'error' => 'Invalid status'], 400);
-        }
-
-        $db = get_db();
-        if ($db && !empty($ticketId)) {
-            try {
-                $stmt = $db->prepare("UPDATE support_tickets SET status = ?, updated_at = NOW() WHERE id = ?");
-                $stmt->execute([$status, $ticketId]);
-                json_response(['success' => true, 'status' => $status]);
-            } catch (Exception $e) {
-                json_response(['success' => false, 'error' => $e->getMessage()], 500);
-            }
-        }
-        json_response(['success' => true, 'status' => $status]);
         break;
 
     default:

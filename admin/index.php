@@ -1,7 +1,8 @@
 <?php
 /**
- * Amader Job Online - Standalone Production Admin Panel
- * Secure, session-authenticated management dashboard for cPanel hosting.
+ * Amader Job Online - Production Admin Control Center
+ * Secure, session-authenticated cPanel management dashboard
+ * Single Source of Truth: MySQL (bahubal2_Amaderjob8383)
  */
 
 require_once __DIR__ . '/../config/env.php';
@@ -51,14 +52,14 @@ if (!is_admin_logged_in()) {
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
       <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
     </head>
-    <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
-      <div class="w-full max-w-md bg-slate-800/90 border border-slate-700/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+    <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+      <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
         <div class="text-center mb-8">
           <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 mb-4 shadow-inner">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           </div>
           <h1 class="text-2xl font-black tracking-tight text-white">Admin Control Center</h1>
-          <p class="text-xs text-slate-400 mt-1">Amader Job Online &bull; cPanel Management</p>
+          <p class="text-xs text-slate-400 mt-1">Amader Job Online &bull; Production Management</p>
         </div>
 
         <?php if (!empty($loginError)): ?>
@@ -70,7 +71,7 @@ if (!is_admin_logged_in()) {
 
         <?php if (!$db): ?>
           <div class="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
-            <strong>Notice:</strong> Database is not yet connected. Configure your MySQL credentials in <code>.env</code> file, then import <code>database.sql</code> via phpMyAdmin.
+            <strong>Notice:</strong> Database is not yet connected. Configure MySQL credentials in <code>.env</code> file.
           </div>
         <?php endif; ?>
 
@@ -78,12 +79,12 @@ if (!is_admin_logged_in()) {
           <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <div>
             <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Admin Email or Username</label>
-            <input type="text" name="email_or_user" required placeholder="admin@amaderjob.com" class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm">
+            <input type="text" name="email_or_user" required placeholder="admin@amaderjob.com" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm">
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Password</label>
-            <input type="password" name="password" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm">
+            <input type="password" name="password" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm">
           </div>
 
           <button type="submit" name="admin_login_submit" value="1" class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 transition-all text-sm flex items-center justify-center gap-2">
@@ -92,7 +93,7 @@ if (!is_admin_logged_in()) {
           </button>
         </form>
 
-        <div class="mt-8 pt-6 border-t border-slate-700/60 text-center">
+        <div class="mt-8 pt-6 border-t border-slate-800 text-center">
           <a href="<?= app_url() ?>" class="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center justify-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             <span>Back to Main Website</span>
@@ -121,21 +122,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $postAction = $_POST['admin_action'] ?? '';
 
-        // Update Site Settings
+        // Update General Website Settings & Logo/Favicon Upload
         if ($postAction === 'update_site_settings') {
             $keys = [
                 'site_name', 'site_name_bn', 'site_subtitle', 'site_subtitle_bn',
                 'support_email', 'whatsapp_number', 'helpline_phone',
                 'min_deposit_bdt', 'min_withdraw_bdt', 'usd_to_bdt_rate',
-                'notice_marquee', 'notice_marquee_bn', 'maintenance_mode',
-                'deposit_bonus_percent'
+                'notice_marquee', 'notice_marquee_bn', 'deposit_bonus_percent'
             ];
             foreach ($keys as $k) {
                 if (isset($_POST[$k])) {
                     set_setting($k, trim($_POST[$k]));
                 }
             }
-            $actionMsg = 'General website settings updated successfully!';
+            set_setting('maintenance_mode', isset($_POST['maintenance_mode']) ? '1' : '0');
+
+            // Handle Logo Upload
+            if (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['logo_file'];
+                $allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+                if (in_array($file['type'], $allowed, true) && $file['size'] <= 2 * 1024 * 1024) {
+                    $uploadsDir = __DIR__ . '/../uploads';
+                    if (!is_dir($uploadsDir)) {
+                        mkdir($uploadsDir, 0755, true);
+                    }
+                    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    $destName = 'site_logo_' . time() . '.' . $ext;
+                    $destPath = $uploadsDir . '/' . $destName;
+                    if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                        $webPath = '/uploads/' . $destName;
+                        set_setting('site_logo', $webPath);
+                        set_setting('logo_url', $webPath);
+                    }
+                }
+            }
+
+            // Handle Favicon Upload
+            if (isset($_FILES['favicon_file']) && $_FILES['favicon_file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['favicon_file'];
+                $allowed = ['image/png', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/jpeg', 'image/svg+xml'];
+                if ($file['size'] <= 1 * 1024 * 1024) {
+                    $uploadsDir = __DIR__ . '/../uploads';
+                    if (!is_dir($uploadsDir)) {
+                        mkdir($uploadsDir, 0755, true);
+                    }
+                    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    $destName = 'favicon_' . time() . '.' . $ext;
+                    $destPath = $uploadsDir . '/' . $destName;
+                    if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                        $webPath = '/uploads/' . $destName;
+                        set_setting('site_favicon', $webPath);
+                    }
+                }
+            }
+
+            $actionMsg = 'Site settings and media updated successfully in MySQL!';
+        }
+
+        // Update Referral Settings
+        if ($postAction === 'update_referral_settings') {
+            set_setting('referral_enabled', isset($_POST['referral_enabled']) ? '1' : '0');
+            set_setting('referral_percentage', trim($_POST['referral_percentage'] ?? '5'));
+            set_setting('referral_minimum', trim($_POST['referral_minimum'] ?? '100'));
+            $actionMsg = 'Referral commission configuration saved!';
         }
 
         // Update SMTP Settings
@@ -148,13 +197,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             set_setting('smtp_from_name', trim($_POST['smtp_from_name'] ?? 'Amader Job'));
             set_setting('email_verification_enabled', isset($_POST['email_verification_enabled']) ? '1' : '0');
 
-            // Only update password if a new one is typed
             $newPassword = trim($_POST['smtp_password'] ?? '');
             if (!empty($newPassword)) {
                 set_setting('smtp_password', $newPassword);
             }
 
-            $actionMsg = 'SMTP settings saved! Database settings now take priority over .env';
+            $actionMsg = 'SMTP credentials saved into MySQL settings!';
         }
 
         // Send Test Email
@@ -165,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $mailer = new SmtpMailer();
                 $testHtml = "<h2>Amader Job SMTP Test</h2><p>This is a test message from your Admin Panel. SMTP is working properly on " . date('r') . ".</p>";
-                $smtpTestResult = $mailer->send($testTo, "Amader Job - SMTP Test", $testHtml);
+                $smtpTestResult = $mailer->send($testTo, "Amader Job - SMTP Live Test", $testHtml);
                 if ($smtpTestResult['success']) {
                     $actionMsg = "Test email sent successfully to $testTo!";
                 } else {
@@ -174,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // User Management Actions
+        // User Management: Update Balance
         if ($postAction === 'update_user_balance') {
             $userId = (int)($_POST['user_id'] ?? 0);
             $earning = (float)($_POST['earning_balance_bdt'] ?? 0);
@@ -182,20 +230,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($db && $userId > 0) {
                 $stmt = $db->prepare("UPDATE users SET earning_balance_bdt = ?, deposit_balance_bdt = ? WHERE id = ?");
                 $stmt->execute([$earning, $deposit, $userId]);
-                $actionMsg = "User balance updated successfully!";
+                $actionMsg = "User balance updated successfully in MySQL!";
             }
         }
 
+        // User Management: Toggle Blue Badge & Verification
         if ($postAction === 'toggle_blue_badge') {
             $userId = (int)($_POST['user_id'] ?? 0);
             $badgeStatus = (int)($_POST['has_blue_badge'] ?? 0);
             if ($db && $userId > 0) {
-                $stmt = $db->prepare("UPDATE users SET has_blue_badge = ?, blue_badge_plan = ? WHERE id = ?");
-                $stmt->execute([$badgeStatus, $badgeStatus ? 'yearly' : null, $userId]);
-                $actionMsg = "User Blue Badge status updated!";
+                $stmt = $db->prepare("UPDATE users SET has_blue_badge = ?, blue_badge_plan = ?, is_verified = ? WHERE id = ?");
+                $stmt->execute([$badgeStatus, $badgeStatus ? 'yearly' : null, $badgeStatus ? 1 : 0, $userId]);
+                $actionMsg = "User badge & verification status updated!";
             }
         }
 
+        // User Management: Ban / Unban
         if ($postAction === 'toggle_ban_user') {
             $userId = (int)($_POST['user_id'] ?? 0);
             $status = $_POST['status'] === 'banned' ? 'banned' : 'active';
@@ -203,14 +253,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($db && $userId > 0) {
                 $stmt = $db->prepare("UPDATE users SET status = ?, ban_reason = ? WHERE id = ?");
                 $stmt->execute([$status, $status === 'banned' ? $reason : null, $userId]);
-                $actionMsg = "User status changed to " . strtoupper($status);
+                $actionMsg = "User account status updated to " . strtoupper($status);
             }
         }
 
-        // Submissions Review
+        // Review Submission
         if ($postAction === 'review_submission') {
             $subId = $_POST['submission_id'] ?? '';
-            $decision = $_POST['decision'] ?? ''; // 'approved' or 'rejected'
+            $decision = $_POST['decision'] ?? '';
             $feedback = trim($_POST['feedback'] ?? '');
 
             if ($db && $subId) {
@@ -218,25 +268,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$subId]);
                 $sub = $stmt->fetch();
 
-                if ($sub) {
+                if ($sub && $sub['status'] === 'pending') {
                     $newStatus = ($decision === 'approved') ? 'approved' : 'rejected';
                     $upd = $db->prepare("UPDATE task_submissions SET status = ?, feedback = ? WHERE id = ?");
                     $upd->execute([$newStatus, $feedback, $subId]);
 
                     if ($newStatus === 'approved') {
-                        // Credit worker earning balance and increment completed slots
                         $db->prepare("UPDATE users SET earning_balance_bdt = earning_balance_bdt + ?, completed_tasks_count = completed_tasks_count + 1 WHERE uid = ? OR id = ?")
                            ->execute([$sub['earned_bdt'], $sub['worker_id'], $sub['worker_id']]);
 
                         $db->prepare("UPDATE jobs SET completed_slots = completed_slots + 1 WHERE id = ?")
                            ->execute([$sub['job_id']]);
+
+                        // User notification
+                        $notifId = 'notif_' . time();
+                        $db->prepare("
+                            INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                            VALUES (?, ?, 'Task Approved', 'কাজ অনুমোদিত হয়েছে', ?, ?, 'task_approved', NOW())
+                        ")->execute([
+                            $notifId, $sub['worker_id'],
+                            "Your submission for task has been approved! ৳{$sub['earned_bdt']} added to your earning balance.",
+                            "আপনার কাজের সাবমিশন অনুমোদিত হয়েছে! আপনার অ্যাকাউন্টে ৳{$sub['earned_bdt']} যোগ করা হয়েছে।"
+                        ]);
+                    } else {
+                        // Rejection notification
+                        $notifId = 'notif_' . time();
+                        $db->prepare("
+                            INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                            VALUES (?, ?, 'Task Rejected', 'কাজ বাতিল করা হয়েছে', ?, ?, 'task_rejected', NOW())
+                        ")->execute([
+                            $notifId, $sub['worker_id'],
+                            "Your submission was rejected. Reason: " . ($feedback ?: 'Requirements not met.'),
+                            "আপনার কাজের সাবমিশন বাতিল করা হয়েছে। কারণ: " . ($feedback ?: 'নির্দেশনা মানা হয়নি।')
+                        ]);
                     }
-                    $actionMsg = "Task submission marked as " . strtoupper($newStatus);
+                    $actionMsg = "Submission marked as " . strtoupper($newStatus);
                 }
             }
         }
 
-        // Deposits / Withdrawals Review
+        // Review Transaction (Deposit / Withdrawal)
         if ($postAction === 'review_transaction') {
             $txId = $_POST['tx_id'] ?? '';
             $status = $_POST['decision'] === 'approved' ? 'completed' : 'rejected';
@@ -246,17 +317,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$txId]);
                 $tx = $stmt->fetch();
 
-                if ($tx) {
+                if ($tx && $tx['status'] === 'pending') {
                     $db->prepare("UPDATE wallet_transactions SET status = ? WHERE id = ?")->execute([$status, $txId]);
 
                     if ($status === 'completed' && $tx['type'] === 'deposit') {
                         // Credit deposit balance
                         $db->prepare("UPDATE users SET deposit_balance_bdt = deposit_balance_bdt + ? WHERE uid = ? OR id = ?")
                            ->execute([$tx['amount_bdt'], $tx['user_id'], $tx['user_id']]);
+
+                        // Notification
+                        $notifId = 'notif_' . time();
+                        $db->prepare("
+                            INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                            VALUES (?, ?, 'Deposit Approved', 'ডিপোজিট অনুমোদিত', ?, ?, 'system', NOW())
+                        ")->execute([
+                            $notifId, $tx['user_id'],
+                            "Your deposit of ৳{$tx['amount_bdt']} has been approved and credited!",
+                            "আপনার ৳{$tx['amount_bdt']} ডিপোজিট সফলভাবে অ্যাকাউন্টে যোগ করা হয়েছে!"
+                        ]);
+                    } elseif ($status === 'completed' && $tx['type'] === 'withdrawal') {
+                        // Withdrawal completed - user balance was deducted when requested
+                        $notifId = 'notif_' . time();
+                        $db->prepare("
+                            INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                            VALUES (?, ?, 'Withdrawal Paid', 'ক্যাশআউট সম্পন্ন হয়েছে', ?, ?, 'system', NOW())
+                        ")->execute([
+                            $notifId, $tx['user_id'],
+                            "Your withdrawal of ৳{$tx['amount_bdt']} via " . strtoupper($tx['method'] ?? 'bKash') . " to {$tx['account_number']} has been sent!",
+                            "আপনার ৳{$tx['amount_bdt']} ক্যাশআউট ({$tx['method']}) সফলভাবে পাঠানো হয়েছে!"
+                        ]);
                     } elseif ($status === 'rejected' && $tx['type'] === 'withdrawal') {
-                        // Refund worker earning balance
+                        // Refund user earning balance safely
                         $db->prepare("UPDATE users SET earning_balance_bdt = earning_balance_bdt + ? WHERE uid = ? OR id = ?")
                            ->execute([$tx['amount_bdt'], $tx['user_id'], $tx['user_id']]);
+
+                        // Notification
+                        $notifId = 'notif_' . time();
+                        $db->prepare("
+                            INSERT INTO notifications (id, user_id, title, title_bn, message, message_bn, type, created_at)
+                            VALUES (?, ?, 'Withdrawal Rejected (Refunded)', 'উইথড্রয়াল বাতিল (রিফান্ড)', ?, ?, 'system', NOW())
+                        ")->execute([
+                            $notifId, $tx['user_id'],
+                            "Your withdrawal of ৳{$tx['amount_bdt']} was rejected and the balance has been refunded to your earning wallet.",
+                            "আপনার ৳{$tx['amount_bdt']} উইথড্রয়াল বাতিল করা হয়েছে এবং পুরো ব্যালেন্স রিফান্ড করা হয়েছে।"
+                        ]);
                     }
                     $actionMsg = "Transaction updated to " . strtoupper($status);
                 }
@@ -288,15 +392,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newStatus = trim($_POST['ticket_status'] ?? 'in_progress');
 
             if ($db && $ticketId && $replyMsg) {
-                // Insert message
                 $stmt = $db->prepare("INSERT INTO ticket_messages (ticket_id, sender, sender_name, message, created_at) VALUES (?, 'admin', 'Amader Job Support', ?, NOW())");
                 $stmt->execute([$ticketId, $replyMsg]);
 
-                // Update ticket
                 $db->prepare("UPDATE support_tickets SET status = ?, unread_user = 1, unread_admin = 0, updated_at = NOW() WHERE id = ?")
                    ->execute([$newStatus, $ticketId]);
 
-                // Send email notification to user if possible
                 try {
                     $tInfo = $db->prepare("SELECT user_email, user_name, subject FROM support_tickets WHERE id = ?");
                     $tInfo->execute([$ticketId]);
@@ -314,976 +415,1052 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $actionMsg = "Reply posted successfully to Ticket #{$ticketId}";
             }
         }
-
-        // Change Ticket Status
-        if ($postAction === 'update_ticket_status') {
-            $ticketId = trim($_POST['ticket_id'] ?? '');
-            $status = trim($_POST['status'] ?? 'open');
-            if ($db && $ticketId) {
-                $db->prepare("UPDATE support_tickets SET status = ?, updated_at = NOW() WHERE id = ?")
-                   ->execute([$status, $ticketId]);
-                $actionMsg = "Ticket #{$ticketId} status updated to " . strtoupper($status);
-            }
-        }
     }
 }
 
-// Fetch stats for dashboard
-$stats = [
-    'users_count' => 0,
-    'jobs_count' => 0,
-    'submissions_pending' => 0,
-    'deposits_pending' => 0,
-    'withdrawals_pending' => 0,
-    'tickets_open' => 0
-];
+// Fetch Real-time Dashboard KPIs from MySQL
+$kpiUsers = 0;
+$kpiJobs = 0;
+$kpiPendingWithdrawals = 0;
+$kpiPendingDeposits = 0;
+$kpiPendingSubmissions = 0;
+$kpiOpenTickets = 0;
+$kpiTotalPayoutBDT = 0.0;
+$kpiTotalDepositBDT = 0.0;
 
 if ($db) {
     try {
-        $stats['users_count'] = (int)$db->query("SELECT COUNT(*) FROM users")->fetchColumn();
-        $stats['jobs_count'] = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
-        $stats['submissions_pending'] = (int)$db->query("SELECT COUNT(*) FROM task_submissions WHERE status = 'pending'")->fetchColumn();
-        $stats['deposits_pending'] = (int)$db->query("SELECT COUNT(*) FROM wallet_transactions WHERE type = 'deposit' AND status = 'pending'")->fetchColumn();
-        $stats['withdrawals_pending'] = (int)$db->query("SELECT COUNT(*) FROM wallet_transactions WHERE type = 'withdrawal' AND status = 'pending'")->fetchColumn();
-        $stats['tickets_open'] = (int)$db->query("SELECT COUNT(*) FROM support_tickets WHERE status = 'open'")->fetchColumn();
+        $kpiUsers = (int)$db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+        $kpiJobs = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
+        $kpiPendingWithdrawals = (int)$db->query("SELECT COUNT(*) FROM wallet_transactions WHERE type = 'withdrawal' AND status = 'pending'")->fetchColumn();
+        $kpiPendingDeposits = (int)$db->query("SELECT COUNT(*) FROM wallet_transactions WHERE type = 'deposit' AND status = 'pending'")->fetchColumn();
+        $kpiPendingSubmissions = (int)$db->query("SELECT COUNT(*) FROM task_submissions WHERE status = 'pending'")->fetchColumn();
+        $kpiOpenTickets = (int)$db->query("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open', 'in_progress')")->fetchColumn();
+        $kpiTotalPayoutBDT = (float)$db->query("SELECT COALESCE(SUM(amount_bdt), 0) FROM wallet_transactions WHERE type = 'withdrawal' AND status = 'completed'")->fetchColumn();
+        $kpiTotalDepositBDT = (float)$db->query("SELECT COALESCE(SUM(amount_bdt), 0) FROM wallet_transactions WHERE type = 'deposit' AND status = 'completed'")->fetchColumn();
     } catch (Exception $e) {}
 }
 
-$mailer = new SmtpMailer();
-$smtpConfigured = $mailer->isConfigured();
+$siteLogo = get_setting('site_logo', get_setting('logo_url', '/assets/logo.png'));
+$siteFavicon = get_setting('site_favicon', '/favicon.ico');
+$adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amader Job Online - Admin Panel</title>
+  <title>Admin Panel - Amader Job Online</title>
+  <link rel="icon" href="<?= sanitize_output($siteFavicon) ?>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .badge-status { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
 
-  <!-- Sidebar -->
-  <aside class="w-full md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
-    <div class="p-6 border-b border-slate-800">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-black text-lg">
-          AJ
-        </div>
-        <div>
-          <h2 class="font-black text-white text-base tracking-tight leading-tight">Amader Job</h2>
-          <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400">cPanel Admin</span>
-        </div>
+  <!-- Mobile Top Bar with Admin Avatar & Menu Toggle Button -->
+  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-bold text-white shadow-md text-sm">
+        <?= strtoupper(substr($adminUsername, 0, 1)) ?>
       </div>
-    </div>
-
-    <nav class="p-4 space-y-1 text-sm font-semibold flex-1">
-      <a href="?tab=dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= $tab === 'dashboard' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span>Dashboard</span>
-      </a>
-
-      <a href="?tab=users" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'users' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-          <span>Users</span>
-        </div>
-        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400"><?= $stats['users_count'] ?></span>
-      </a>
-
-      <a href="?tab=submissions" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'submissions' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-          <span>Submissions</span>
-        </div>
-        <?php if ($stats['submissions_pending'] > 0): ?>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold"><?= $stats['submissions_pending'] ?></span>
-        <?php endif; ?>
-      </a>
-
-      <a href="?tab=jobs" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'jobs' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-          <span>Jobs</span>
-        </div>
-        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400"><?= $stats['jobs_count'] ?></span>
-      </a>
-
-      <a href="?tab=deposits" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'deposits' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-          <span>Deposits</span>
-        </div>
-        <?php if ($stats['deposits_pending'] > 0): ?>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold"><?= $stats['deposits_pending'] ?></span>
-        <?php endif; ?>
-      </a>
-
-      <a href="?tab=withdrawals" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'withdrawals' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-          <span>Withdrawals</span>
-        </div>
-        <?php if ($stats['withdrawals_pending'] > 0): ?>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold"><?= $stats['withdrawals_pending'] ?></span>
-        <?php endif; ?>
-      </a>
-
-      <a href="?tab=tickets" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'tickets' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-          <span>Support Tickets</span>
-        </div>
-        <?php if ($stats['tickets_open'] > 0): ?>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold"><?= $stats['tickets_open'] ?></span>
-        <?php endif; ?>
-      </a>
-
-      <a href="?tab=smtp" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= $tab === 'smtp' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-          <span>SMTP Settings</span>
-        </div>
-        <span class="w-2.5 h-2.5 rounded-full <?= $smtpConfigured ? 'bg-emerald-400' : 'bg-amber-400' ?>" title="<?= $smtpConfigured ? 'Configured' : 'Needs Setup' ?>"></span>
-      </a>
-
-      <a href="?tab=settings" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= $tab === 'settings' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span>Site Settings</span>
-      </a>
-
-      <a href="?tab=profile" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= $tab === 'profile' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' ?>">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        <span>Admin Password</span>
-      </a>
-    </nav>
-
-    <div class="p-4 border-t border-slate-800 space-y-2">
-      <a href="<?= app_url() ?>" target="_blank" class="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-        <span>Open Website</span>
-      </a>
-      <a href="?action=logout" class="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 text-xs font-bold transition-all">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        <span>Log Out</span>
-      </a>
-    </div>
-  </aside>
-
-  <!-- Main Content Area -->
-  <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-    <!-- Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-slate-800/80 mb-8">
       <div>
-        <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight capitalize">
-          <?= str_replace('_', ' ', $tab) ?>
-        </h1>
-        <p class="text-xs md:text-sm text-slate-400 mt-1">
-          Connected to: <code class="text-emerald-400 font-mono"><?= sanitize_output($appUrl) ?></code>
-        </p>
+        <div class="font-bold text-white text-sm leading-tight"><?= sanitize_output($adminUsername) ?></div>
+        <div class="text-[10px] font-semibold text-emerald-400">SUPER ADMIN</div>
       </div>
+    </div>
+    
+    <button id="mobileMenuBtn" type="button" class="p-2 rounded-xl bg-slate-800 text-slate-200 hover:text-white hover:bg-slate-700 transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+  </div>
 
-      <div class="flex items-center gap-3">
-        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Live Production</span>
-        </span>
-        <span class="text-xs font-bold text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
-          <?= sanitize_output($_SESSION['admin_email'] ?? 'admin') ?>
-        </span>
-      </div>
-    </header>
+  <!-- Mobile Drawer Backdrop -->
+  <div id="mobileDrawerBackdrop" class="fixed inset-0 bg-slate-950/80 z-50 backdrop-blur-sm hidden transition-opacity lg:hidden"></div>
 
-    <!-- Success & Error Banners -->
-    <?php if (!empty($actionMsg)): ?>
-      <div class="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-3 shadow-lg">
-        <svg class="w-5 h-5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        <span><?= sanitize_output($actionMsg) ?></span>
-      </div>
-    <?php endif; ?>
+  <div class="flex-1 flex min-h-screen">
 
-    <?php if (!empty($actionError)): ?>
-      <div class="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3 shadow-lg">
-        <svg class="w-5 h-5 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span><?= sanitize_output($actionError) ?></span>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: DASHBOARD -->
-    <?php if ($tab === 'dashboard'): ?>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Registered Users</span>
-            <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            </div>
+    <!-- Sidebar Navigation Drawer -->
+    <aside id="sidebarDrawer" class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 transform -translate-x-full lg:translate-x-0 lg:static lg:z-auto">
+      
+      <!-- Sidebar Profile & Header -->
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-emerald-500/20">
+            <?= strtoupper(substr($adminUsername, 0, 1)) ?>
           </div>
-          <p class="text-3xl font-black text-white mt-4"><?= number_format($stats['users_count']) ?></p>
-          <a href="?tab=users" class="text-xs font-bold text-blue-400 hover:text-blue-300 mt-2 inline-block">Manage Users &rarr;</a>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Submissions</span>
-            <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-            </div>
-          </div>
-          <p class="text-3xl font-black text-white mt-4"><?= number_format($stats['submissions_pending']) ?></p>
-          <a href="?tab=submissions" class="text-xs font-bold text-amber-400 hover:text-amber-300 mt-2 inline-block">Review Proofs &rarr;</a>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Deposits</span>
-            <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-          </div>
-          <p class="text-3xl font-black text-white mt-4"><?= number_format($stats['deposits_pending']) ?></p>
-          <a href="?tab=deposits" class="text-xs font-bold text-emerald-400 hover:text-emerald-300 mt-2 inline-block">Check bKash/Nagad &rarr;</a>
-        </div>
-      </div>
-
-      <!-- System Quick Status -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 mb-8">
-        <h3 class="text-base font-bold text-white mb-4">System Operational Status</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80">
-            <span class="text-slate-400 block mb-1">Database Driver</span>
-            <span class="font-bold text-emerald-400 font-mono"><?= $db ? 'PDO MySQL Connected' : 'Disconnected' ?></span>
-          </div>
-          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80">
-            <span class="text-slate-400 block mb-1">SMTP Status</span>
-            <span class="font-bold <?= $smtpConfigured ? 'text-emerald-400' : 'text-amber-400' ?>">
-              <?= $smtpConfigured ? 'Ready & Configured' : 'Needs Configuration' ?>
-            </span>
-          </div>
-          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80">
-            <span class="text-slate-400 block mb-1">PHP Version</span>
-            <span class="font-bold text-slate-200 font-mono"><?= phpversion() ?></span>
-          </div>
-          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80">
-            <span class="text-slate-400 block mb-1">Single Truth Domain</span>
-            <span class="font-bold text-emerald-400 truncate block font-mono"><?= sanitize_output($appUrl) ?></span>
-          </div>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: SMTP & EMAIL SETTINGS -->
-    <?php if ($tab === 'smtp'): ?>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Configuration Form -->
-        <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
-          <div class="flex items-center justify-between pb-6 border-b border-slate-800 mb-6">
-            <div>
-              <h3 class="text-lg font-black text-white">SMTP Mail Server Configuration</h3>
-              <p class="text-xs text-slate-400 mt-1">Configured settings in MySQL database take priority over .env</p>
-            </div>
-            <span class="px-3 py-1 rounded-full text-xs font-bold <?= $smtpConfigured ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30' ?>">
-              <?= $smtpConfigured ? 'Active' : 'Unconfigured' ?>
-            </span>
-          </div>
-
-          <form method="POST" action="?tab=smtp" class="space-y-6">
-            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-            <input type="hidden" name="admin_action" value="update_smtp_settings">
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Host</label>
-                <input type="text" name="smtp_host" value="<?= sanitize_output(get_setting('smtp_host', env('SMTP_HOST', ''))) ?>" placeholder="mail.yourdomain.com" required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Port</label>
-                <input type="number" name="smtp_port" value="<?= sanitize_output(get_setting('smtp_port', env('SMTP_PORT', '587'))) ?>" placeholder="587" required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Username</label>
-                <input type="text" name="smtp_username" value="<?= sanitize_output(get_setting('smtp_username', env('SMTP_USERNAME', ''))) ?>" placeholder="info@yourdomain.com" required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Password</label>
-                <input type="password" name="smtp_password" placeholder="<?= !empty(get_setting('smtp_password', env('SMTP_PASSWORD', ''))) ? '•••••••••••• (Unchanged)' : 'Enter SMTP password' ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-                <span class="text-[11px] text-slate-500 mt-1 block">Leave blank to keep existing password</span>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Encryption</label>
-                <?php $enc = strtolower(get_setting('smtp_encryption', env('SMTP_ENCRYPTION', 'tls'))); ?>
-                <select name="smtp_encryption" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-                  <option value="tls" <?= $enc === 'tls' ? 'selected' : '' ?>>TLS (Recommended - Port 587)</option>
-                  <option value="ssl" <?= $enc === 'ssl' ? 'selected' : '' ?>>SSL (Port 465)</option>
-                  <option value="none" <?= $enc === 'none' ? 'selected' : '' ?>>None (Plain - Port 25/587)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">From Email</label>
-                <input type="email" name="smtp_from_email" value="<?= sanitize_output(get_setting('smtp_from_email', env('SMTP_FROM_EMAIL', ''))) ?>" placeholder="noreply@yourdomain.com" required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">From Name</label>
-                <input type="text" name="smtp_from_name" value="<?= sanitize_output(get_setting('smtp_from_name', env('SMTP_FROM_NAME', 'Amader Job'))) ?>" placeholder="Amader Job" required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-            </div>
-
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" name="email_verification_enabled" value="1" <?= get_setting('email_verification_enabled', '1') === '1' ? 'checked' : '' ?> class="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700">
-                <span class="text-sm font-semibold text-slate-300">Require Email OTP Verification for Sign Up</span>
-              </label>
-
-              <button type="submit" class="py-3 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all text-sm">
-                Save SMTP Settings
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Live SMTP Test Card -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col justify-between">
           <div>
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center font-bold">
-                ⚡
-              </div>
-              <div>
-                <h4 class="font-black text-white text-base">Test SMTP Connection</h4>
-                <p class="text-xs text-slate-400">Send an instant test email</p>
+            <h2 class="font-bold text-white text-sm leading-snug"><?= sanitize_output($adminUsername) ?></h2>
+            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 mt-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              SUPER ADMIN
+            </div>
+          </div>
+        </div>
+
+        <button id="closeDrawerBtn" type="button" class="lg:hidden p-1.5 text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <?php
+        $navItems = [
+            'dashboard' => ['label' => 'Dashboard', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>'],
+            'users' => ['label' => 'Users', 'badge' => (string)$kpiUsers, 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>'],
+            'withdrawals' => ['label' => 'Withdrawals', 'badge' => $kpiPendingWithdrawals > 0 ? (string)$kpiPendingWithdrawals : '', 'badgeColor' => 'bg-amber-500', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>'],
+            'deposits' => ['label' => 'Deposits', 'badge' => $kpiPendingDeposits > 0 ? (string)$kpiPendingDeposits : '', 'badgeColor' => 'bg-blue-500', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+            'submissions' => ['label' => 'Submissions', 'badge' => $kpiPendingSubmissions > 0 ? (string)$kpiPendingSubmissions : '', 'badgeColor' => 'bg-emerald-500', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>'],
+            'jobs' => ['label' => 'Jobs Marketplace', 'badge' => (string)$kpiJobs, 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'],
+            'tickets' => ['label' => 'Support Tickets', 'badge' => $kpiOpenTickets > 0 ? (string)$kpiOpenTickets : '', 'badgeColor' => 'bg-rose-500', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>'],
+            'settings' => ['label' => 'Site Settings', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>'],
+            'referral' => ['label' => 'Referral System', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>'],
+            'smtp' => ['label' => 'SMTP Mailer', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'],
+            'security' => ['label' => 'Admin Password', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>'],
+        ];
+
+        foreach ($navItems as $k => $item):
+            $isActive = ($tab === $k);
+        ?>
+          <a href="<?= app_url('admin/index.php?tab=' . $k) ?>" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all <?= $isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' ?>">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0 <?= $isActive ? 'text-emerald-400' : 'text-slate-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><?= $item['icon'] ?></svg>
+              <span><?= $item['label'] ?></span>
+            </div>
+            <?php if (!empty($item['badge'])): ?>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white <?= $item['badgeColor'] ?? 'bg-slate-800 text-slate-300' ?>"><?= $item['badge'] ?></span>
+            <?php endif; ?>
+          </a>
+        <?php endforeach; ?>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-slate-800 space-y-2">
+        <a href="<?= app_url() ?>" target="_blank" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>View Live Site</span>
+        </a>
+        <a href="<?= app_url('admin/index.php?action=logout') ?>" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold transition-colors border border-rose-500/20">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 bg-slate-950 overflow-y-auto">
+      
+      <!-- Top Content Header -->
+      <header class="px-6 py-5 bg-slate-900/40 border-b border-slate-800/80 flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-black text-white capitalize"><?= str_replace('_', ' ', $tab) ?></h1>
+          <p class="text-xs text-slate-400 mt-0.5">Database: <span class="text-emerald-400 font-mono"><?= env('DB_NAME', 'bahubal2_Amaderjob8383') ?></span> &bull; Status: <span class="text-emerald-400 font-semibold">Active</span></p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400 hidden sm:inline"><?= date('D, d M Y - H:i:s') ?></span>
+          <a href="<?= app_url('admin/index.php?tab=' . $tab) ?>" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition-colors" title="Refresh">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- Alert Messages -->
+      <div class="p-6 space-y-6">
+        <?php if (!empty($actionMsg)): ?>
+          <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-3 shadow-lg shadow-emerald-500/5">
+            <svg class="w-5 h-5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span><?= sanitize_output($actionMsg) ?></span>
+          </div>
+        <?php endif; ?>
+
+        <?php if (!empty($actionError)): ?>
+          <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3 shadow-lg shadow-rose-500/5">
+            <svg class="w-5 h-5 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span><?= sanitize_output($actionError) ?></span>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: DASHBOARD -->
+        <?php if ($tab === 'dashboard'): ?>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl relative overflow-hidden">
+              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Registered Users</div>
+              <div class="text-3xl font-black text-white mt-2"><?= number_format($kpiUsers) ?></div>
+              <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1 font-semibold">
+                <span>Active Community</span>
               </div>
             </div>
 
-            <p class="text-xs text-slate-400 leading-relaxed mb-6">
-              Verify that your cPanel SMTP credentials and firewall ports are open and communicating properly.
-            </p>
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl relative overflow-hidden">
+              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Jobs</div>
+              <div class="text-3xl font-black text-white mt-2"><?= number_format($kpiJobs) ?></div>
+              <div class="text-xs text-blue-400 mt-2 font-semibold">Live on Marketplace</div>
+            </div>
 
-            <form method="POST" action="?tab=smtp" class="space-y-4">
-              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-              <input type="hidden" name="admin_action" value="test_smtp_email">
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl relative overflow-hidden">
+              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Withdrawals</div>
+              <div class="text-3xl font-black text-amber-400 mt-2"><?= number_format($kpiPendingWithdrawals) ?></div>
+              <a href="<?= app_url('admin/index.php?tab=withdrawals') ?>" class="text-xs text-amber-400 hover:underline mt-2 inline-block font-semibold">Review Requests &rarr;</a>
+            </div>
 
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Recipient Email Address</label>
-                <input type="email" name="test_recipient_email" placeholder="your-email@example.com" required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-
-              <button type="submit" class="w-full py-3 px-4 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-600/30 transition-all text-sm flex items-center justify-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                <span>Send Test Email Now</span>
-              </button>
-            </form>
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl relative overflow-hidden">
+              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Payouts (BDT)</div>
+              <div class="text-3xl font-black text-emerald-400 mt-2">৳<?= number_format($kpiTotalPayoutBDT, 2) ?></div>
+              <div class="text-xs text-slate-400 mt-2">Completed Cashouts</div>
+            </div>
           </div>
 
-          <?php if ($smtpTestResult !== null && !empty($smtpTestResult['logs'])): ?>
-            <div class="mt-6 pt-4 border-t border-slate-800">
-              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Connection Handshake Log:</span>
-              <div class="bg-black/80 rounded-xl p-3 text-[10px] font-mono text-slate-300 max-h-48 overflow-y-auto space-y-1">
-                <?php foreach ($smtpTestResult['logs'] as $logLine): ?>
-                  <div><?= sanitize_output($logLine) ?></div>
-                <?php endforeach; ?>
+          <!-- Pending Actions Quick Table -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            
+            <!-- Pending Withdrawals Card -->
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-white text-base">Pending Withdrawals</h3>
+                <a href="<?= app_url('admin/index.php?tab=withdrawals') ?>" class="text-xs text-emerald-400 hover:underline">View All</a>
               </div>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: USERS -->
-    <?php if ($tab === 'users'): ?>
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800 mb-6">
-          <h3 class="text-lg font-black text-white">Registered Users Directory</h3>
-          <span class="text-xs text-slate-400">Total: <?= $stats['users_count'] ?> Members</span>
-        </div>
-
-        <?php
-        $users = [];
-        if ($db) {
-            try {
-                $stmt = $db->query("SELECT * FROM users ORDER BY id DESC LIMIT 50");
-                $users = $stmt->fetchAll();
-            } catch (Exception $e) {}
-        }
-        ?>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead>
-              <tr class="text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                <th class="py-3 px-4">User</th>
-                <th class="py-3 px-4">UID / Phone</th>
-                <th class="py-3 px-4">Earning Bal.</th>
-                <th class="py-3 px-4">Deposit Bal.</th>
-                <th class="py-3 px-4">Blue Badge</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60">
-              <?php foreach ($users as $u): ?>
-                <tr class="hover:bg-slate-800/30 transition-colors">
-                  <td class="py-3 px-4">
-                    <div class="font-bold text-white"><?= sanitize_output($u['name']) ?></div>
-                    <div class="text-xs text-slate-400"><?= sanitize_output($u['email']) ?></div>
-                  </td>
-                  <td class="py-3 px-4 font-mono text-xs text-slate-300">
-                    <div>UID: <?= sanitize_output($u['uid']) ?></div>
-                    <div class="text-slate-500"><?= sanitize_output($u['phone'] ?: 'N/A') ?></div>
-                  </td>
-                  <td class="py-3 px-4 font-bold text-emerald-400 font-mono">
-                    ৳<?= number_format((float)$u['earning_balance_bdt'], 2) ?>
-                  </td>
-                  <td class="py-3 px-4 font-bold text-blue-400 font-mono">
-                    ৳<?= number_format((float)$u['deposit_balance_bdt'], 2) ?>
-                  </td>
-                  <td class="py-3 px-4">
-                    <form method="POST" action="?tab=users" class="inline">
-                      <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                      <input type="hidden" name="admin_action" value="toggle_blue_badge">
-                      <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                      <input type="hidden" name="has_blue_badge" value="<?= $u['has_blue_badge'] ? '0' : '1' ?>">
-                      <button type="submit" class="px-2.5 py-1 rounded-full text-xs font-bold transition-all <?= $u['has_blue_badge'] ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'bg-slate-800 text-slate-500 hover:text-slate-300' ?>">
-                        <?= $u['has_blue_badge'] ? '✓ Verified Badge' : '+ Give Badge' ?>
-                      </button>
-                    </form>
-                  </td>
-                  <td class="py-3 px-4">
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= $u['status'] === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400' ?>">
-                      <?= ucfirst($u['status']) ?>
-                    </span>
-                  </td>
-                  <td class="py-3 px-4 text-right space-x-2">
-                    <!-- Edit balance modal / inline trigger -->
-                    <form method="POST" action="?tab=users" class="inline" onsubmit="return confirm('Toggle status for this user?');">
-                      <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                      <input type="hidden" name="admin_action" value="toggle_ban_user">
-                      <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                      <input type="hidden" name="status" value="<?= $u['status'] === 'active' ? 'banned' : 'active' ?>">
-                      <button type="submit" class="px-3 py-1 rounded-lg text-xs font-bold <?= $u['status'] === 'active' ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' ?>">
-                        <?= $u['status'] === 'active' ? 'Ban' : 'Unban' ?>
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: SUBMISSIONS REVIEW -->
-    <?php if ($tab === 'submissions'): ?>
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
-        <div class="pb-6 border-b border-slate-800 mb-6">
-          <h3 class="text-lg font-black text-white">Worker Task Proof Submissions</h3>
-          <p class="text-xs text-slate-400 mt-1">Approve to automatically credit worker balance and complete slot</p>
-        </div>
-
-        <?php
-        $subs = [];
-        if ($db) {
-            try {
-                $stmt = $db->query("SELECT s.*, j.title as job_title FROM task_submissions s LEFT JOIN jobs j ON s.job_id = j.id ORDER BY s.submitted_at DESC LIMIT 30");
-                $subs = $stmt->fetchAll();
-            } catch (Exception $e) {}
-        }
-        ?>
-
-        <div class="space-y-4">
-          <?php foreach ($subs as $s): ?>
-            <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-emerald-400">৳<?= number_format((float)$s['earned_bdt'], 2) ?></span>
-                  <span class="text-xs text-slate-500">&bull;</span>
-                  <span class="text-xs font-semibold text-slate-400">Worker: <?= sanitize_output($s['worker_name']) ?> (<?= sanitize_output($s['worker_id']) ?>)</span>
-                </div>
-                <h4 class="font-bold text-white text-sm"><?= sanitize_output($s['job_title'] ?: $s['job_id']) ?></h4>
-                <p class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-slate-800/80 mt-2 font-mono">
-                  <?= sanitize_output($s['proof_text']) ?>
-                </p>
-                <?php if (!empty($s['proof_url'])): ?>
-                  <a href="<?= sanitize_output($s['proof_url']) ?>" target="_blank" class="text-xs text-blue-400 hover:underline block mt-1">
-                    Proof Link: <?= sanitize_output($s['proof_url']) ?> &rarr;
-                  </a>
-                <?php endif; ?>
-              </div>
-
-              <div class="flex items-center gap-3 shrink-0">
-                <?php if ($s['status'] === 'pending'): ?>
-                  <form method="POST" action="?tab=submissions" class="inline">
-                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                    <input type="hidden" name="admin_action" value="review_submission">
-                    <input type="hidden" name="submission_id" value="<?= $s['id'] ?>">
-                    <input type="hidden" name="decision" value="approved">
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/30">
-                      Approve & Credit
-                    </button>
-                  </form>
-
-                  <form method="POST" action="?tab=submissions" class="inline">
-                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                    <input type="hidden" name="admin_action" value="review_submission">
-                    <input type="hidden" name="submission_id" value="<?= $s['id'] ?>">
-                    <input type="hidden" name="decision" value="rejected">
-                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs">
-                      Reject
-                    </button>
-                  </form>
-                <?php else: ?>
-                  <span class="px-3 py-1 rounded-full text-xs font-bold <?= $s['status'] === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400' ?>">
-                    <?= ucfirst($s['status']) ?>
-                  </span>
-                <?php endif; ?>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: DEPOSITS -->
-    <?php if ($tab === 'deposits'): ?>
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
-        <div class="pb-6 border-b border-slate-800 mb-6">
-          <h3 class="text-lg font-black text-white">Deposit Requests (bKash / Nagad / Rocket)</h3>
-          <p class="text-xs text-slate-400 mt-1">Approve to credit user's deposit balance</p>
-        </div>
-
-        <?php
-        $deposits = [];
-        if ($db) {
-            try {
-                $stmt = $db->query("SELECT * FROM wallet_transactions WHERE type = 'deposit' ORDER BY created_at DESC LIMIT 30");
-                $deposits = $stmt->fetchAll();
-            } catch (Exception $e) {}
-        }
-        ?>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead>
-              <tr class="text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                <th class="py-3 px-4">User ID</th>
-                <th class="py-3 px-4">Method / Account</th>
-                <th class="py-3 px-4">TrxID</th>
-                <th class="py-3 px-4">Amount</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60">
-              <?php foreach ($deposits as $d): ?>
-                <tr class="hover:bg-slate-800/30">
-                  <td class="py-3 px-4 font-mono font-bold text-white"><?= sanitize_output($d['user_id']) ?></td>
-                  <td class="py-3 px-4 uppercase font-bold text-xs text-emerald-400">
-                    <?= sanitize_output($d['method'] ?: 'bKash') ?>
-                    <span class="text-slate-400 block font-mono text-[11px]"><?= sanitize_output($d['account_number'] ?: 'N/A') ?></span>
-                  </td>
-                  <td class="py-3 px-4 font-mono text-xs text-amber-300 font-bold"><?= sanitize_output($d['trx_id'] ?: 'N/A') ?></td>
-                  <td class="py-3 px-4 font-bold text-white font-mono">৳<?= number_format((float)$d['amount_bdt'], 2) ?></td>
-                  <td class="py-3 px-4">
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= $d['status'] === 'completed' ? 'bg-emerald-500/15 text-emerald-400' : ($d['status'] === 'pending' ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400') ?>">
-                      <?= ucfirst($d['status']) ?>
-                    </span>
-                  </td>
-                  <td class="py-3 px-4 text-right">
-                    <?php if ($d['status'] === 'pending'): ?>
-                      <form method="POST" action="?tab=deposits" class="inline">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <input type="hidden" name="admin_action" value="review_transaction">
-                        <input type="hidden" name="tx_id" value="<?= $d['id'] ?>">
-                        <input type="hidden" name="decision" value="approved">
-                        <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs">
-                          Approve
-                        </button>
-                      </form>
-                      <form method="POST" action="?tab=deposits" class="inline">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <input type="hidden" name="admin_action" value="review_transaction">
-                        <input type="hidden" name="tx_id" value="<?= $d['id'] ?>">
-                        <input type="hidden" name="decision" value="rejected">
-                        <button type="submit" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-xs">
-                          Reject
-                        </button>
-                      </form>
-                    <?php endif; ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: WITHDRAWALS -->
-    <?php if ($tab === 'withdrawals'): ?>
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
-        <div class="pb-6 border-b border-slate-800 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 class="text-lg font-black text-white">Withdrawal Payout Requests</h3>
-            <p class="text-xs text-slate-400 mt-1">Approve after transferring funds via bKash, Nagad, or Rocket</p>
-          </div>
-          <span class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono">Pending: <?= $stats['withdrawals_pending'] ?></span>
-        </div>
-
-        <?php
-        $withdrawals = [];
-        if ($db) {
-            try {
-                $stmt = $db->query("SELECT * FROM wallet_transactions WHERE type = 'withdrawal' ORDER BY created_at DESC LIMIT 50");
-                $withdrawals = $stmt->fetchAll();
-            } catch (Exception $e) {}
-        }
-        ?>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead>
-              <tr class="text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                <th class="py-3 px-4">User ID</th>
-                <th class="py-3 px-4">Payout Method</th>
-                <th class="py-3 px-4">Receiver Number</th>
-                <th class="py-3 px-4">Amount</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60">
-              <?php if (empty($withdrawals)): ?>
-                <tr>
-                  <td colspan="6" class="py-8 text-center text-slate-500 text-xs">No withdrawal requests found.</td>
-                </tr>
-              <?php endif; ?>
-              <?php foreach ($withdrawals as $w): ?>
-                <tr class="hover:bg-slate-800/30">
-                  <td class="py-3 px-4 font-mono font-bold text-white"><?= sanitize_output($w['user_id']) ?></td>
-                  <td class="py-3 px-4 uppercase font-bold text-xs text-emerald-400">
-                    <?= sanitize_output($w['method'] ?: 'bKash') ?>
-                  </td>
-                  <td class="py-3 px-4 font-mono text-xs text-amber-300 font-bold"><?= sanitize_output($w['account_number'] ?: 'N/A') ?></td>
-                  <td class="py-3 px-4 font-bold text-white font-mono">৳<?= number_format((float)$w['amount_bdt'], 2) ?></td>
-                  <td class="py-3 px-4">
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= $w['status'] === 'completed' ? 'bg-emerald-500/15 text-emerald-400' : ($w['status'] === 'pending' ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400') ?>">
-                      <?= ucfirst($w['status']) ?>
-                    </span>
-                  </td>
-                  <td class="py-3 px-4 text-right">
-                    <?php if ($w['status'] === 'pending'): ?>
-                      <form method="POST" action="?tab=withdrawals" class="inline">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <input type="hidden" name="admin_action" value="review_transaction">
-                        <input type="hidden" name="tx_id" value="<?= $w['id'] ?>">
-                        <input type="hidden" name="decision" value="approved">
-                        <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs mr-1">
-                          Approve Paid
-                        </button>
-                      </form>
-                      <form method="POST" action="?tab=withdrawals" class="inline">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <input type="hidden" name="admin_action" value="review_transaction">
-                        <input type="hidden" name="tx_id" value="<?= $w['id'] ?>">
-                        <input type="hidden" name="decision" value="rejected">
-                        <button type="submit" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-xs" onclick="return confirm('Reject this withdrawal and refund balance to user?')">
-                          Reject & Refund
-                        </button>
-                      </form>
-                    <?php endif; ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- TAB: TICKETS -->
-    <?php if ($tab === 'tickets'): ?>
-      <?php
-      $activeTicketId = trim($_GET['ticket_id'] ?? '');
-      $activeTicket = null;
-      $ticketMessages = [];
-
-      if ($db && $activeTicketId) {
-          try {
-              $stmt = $db->prepare("SELECT * FROM support_tickets WHERE id = ?");
-              $stmt->execute([$activeTicketId]);
-              $activeTicket = $stmt->fetch();
-
-              if ($activeTicket) {
-                  // Mark as read by admin
-                  $db->prepare("UPDATE support_tickets SET unread_admin = 0 WHERE id = ?")->execute([$activeTicketId]);
-
-                  // Fetch messages
-                  $mStmt = $db->prepare("SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC");
-                  $mStmt->execute([$activeTicketId]);
-                  $ticketMessages = $mStmt->fetchAll();
+              <?php
+              $pWithdrawals = [];
+              if ($db) {
+                  try {
+                      $pStmt = $db->query("SELECT * FROM wallet_transactions WHERE type = 'withdrawal' AND status = 'pending' ORDER BY created_at DESC LIMIT 5");
+                      $pWithdrawals = $pStmt->fetchAll();
+                  } catch (Exception $e) {}
               }
-          } catch (Exception $e) {}
-      }
-      ?>
-
-      <?php if ($activeTicket): ?>
-        <!-- Conversation Detail View for Admin -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl max-w-4xl space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <a href="?tab=tickets" class="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-bold">
-                  &larr; Back to Tickets
-                </a>
-                <span class="text-slate-600">&bull;</span>
-                <span class="font-mono text-xs text-slate-400 font-bold">#<?= sanitize_output($activeTicket['id']) ?></span>
-                <span class="text-xs uppercase px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-bold"><?= sanitize_output($activeTicket['category']) ?></span>
-                <span class="text-xs uppercase px-2 py-0.5 rounded-md <?= $activeTicket['priority'] === 'urgent' ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400' ?> font-bold"><?= sanitize_output($activeTicket['priority']) ?></span>
-              </div>
-              <h3 class="text-xl font-black text-white"><?= sanitize_output($activeTicket['subject']) ?></h3>
-              <p class="text-xs text-slate-400 mt-1">
-                User: <strong class="text-slate-200"><?= sanitize_output($activeTicket['user_name']) ?></strong> (ID: <?= sanitize_output($activeTicket['user_id']) ?>) &bull; Email: <?= sanitize_output($activeTicket['user_email']) ?>
-              </p>
+              ?>
+              <?php if (empty($pWithdrawals)): ?>
+                <p class="text-xs text-slate-400 py-6 text-center">No pending withdrawal requests right now.</p>
+              <?php else: ?>
+                <div class="space-y-3">
+                  <?php foreach ($pWithdrawals as $w): ?>
+                    <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-bold text-white"><?= sanitize_output($w['user_id']) ?> &bull; <span class="text-emerald-400 uppercase font-mono"><?= sanitize_output($w['method']) ?></span></div>
+                        <div class="text-[11px] text-slate-400 font-mono"><?= sanitize_output($w['account_number']) ?> &bull; <?= $w['created_at'] ?></div>
+                      </div>
+                      <div class="text-right">
+                        <div class="text-sm font-black text-white">৳<?= number_format($w['amount_bdt'], 2) ?></div>
+                        <a href="<?= app_url('admin/index.php?tab=withdrawals') ?>" class="text-[10px] font-bold text-amber-400 hover:underline">Process</a>
+                      </div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
             </div>
 
-            <!-- Status Form -->
-            <form method="POST" action="?tab=tickets&ticket_id=<?= urlencode($activeTicket['id']) ?>" class="flex items-center gap-2">
+            <!-- Pending Task Submissions Card -->
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-white text-base">Pending Submissions</h3>
+                <a href="<?= app_url('admin/index.php?tab=submissions') ?>" class="text-xs text-emerald-400 hover:underline">View All</a>
+              </div>
+              <?php
+              $pSubs = [];
+              if ($db) {
+                  try {
+                      $psStmt = $db->query("SELECT * FROM task_submissions WHERE status = 'pending' ORDER BY submitted_at DESC LIMIT 5");
+                      $pSubs = $psStmt->fetchAll();
+                  } catch (Exception $e) {}
+              }
+              ?>
+              <?php if (empty($pSubs)): ?>
+                <p class="text-xs text-slate-400 py-6 text-center">No pending task proofs to review.</p>
+              <?php else: ?>
+                <div class="space-y-3">
+                  <?php foreach ($pSubs as $s): ?>
+                    <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-bold text-white"><?= sanitize_output($s['worker_name']) ?></div>
+                        <div class="text-[11px] text-slate-400">Job: <?= sanitize_output($s['job_id']) ?> &bull; <?= $s['submitted_at'] ?></div>
+                      </div>
+                      <div class="text-right">
+                        <div class="text-sm font-black text-emerald-400">৳<?= number_format($s['earned_bdt'], 2) ?></div>
+                        <a href="<?= app_url('admin/index.php?tab=submissions') ?>" class="text-[10px] font-bold text-emerald-400 hover:underline">Review Proof</a>
+                      </div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
+            </div>
+
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: WITHDRAWALS -->
+        <?php if ($tab === 'withdrawals'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold text-white">Withdrawal Management</h2>
+                <p class="text-xs text-slate-400">Approve or reject cashout requests directly connected to MySQL database.</p>
+              </div>
+            </div>
+
+            <?php
+            $wList = [];
+            if ($db) {
+                try {
+                    $wStmt = $db->query("SELECT * FROM wallet_transactions WHERE type = 'withdrawal' ORDER BY created_at DESC LIMIT 200");
+                    $wList = $wStmt->fetchAll();
+                } catch (Exception $e) {}
+            }
+            ?>
+
+            <?php if (empty($wList)): ?>
+              <div class="p-12 text-center text-slate-400 text-xs">No withdrawal records found in database.</div>
+            <?php else: ?>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950/60 text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+                    <tr>
+                      <th class="py-3.5 px-4">User UID</th>
+                      <th class="py-3.5 px-4">Amount</th>
+                      <th class="py-3.5 px-4">Method</th>
+                      <th class="py-3.5 px-4">Receiver Number</th>
+                      <th class="py-3.5 px-4">Date / Time</th>
+                      <th class="py-3.5 px-4">Status</th>
+                      <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/60">
+                    <?php foreach ($wList as $item): ?>
+                      <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3.5 px-4 font-mono font-bold text-white"><?= sanitize_output($item['user_id']) ?></td>
+                        <td class="py-3.5 px-4 font-black text-white text-sm">৳<?= number_format($item['amount_bdt'], 2) ?></td>
+                        <td class="py-3.5 px-4 uppercase font-bold text-emerald-400"><?= sanitize_output($item['method'] ?? 'bKash') ?></td>
+                        <td class="py-3.5 px-4 font-mono text-slate-200"><?= sanitize_output($item['account_number'] ?? 'N/A') ?></td>
+                        <td class="py-3.5 px-4 text-slate-400"><?= $item['created_at'] ?></td>
+                        <td class="py-3.5 px-4">
+                          <?php if ($item['status'] === 'completed'): ?>
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[10px]">COMPLETED</span>
+                          <?php elseif ($item['status'] === 'rejected'): ?>
+                            <span class="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-[10px]">REJECTED</span>
+                          <?php else: ?>
+                            <span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-[10px] animate-pulse">PENDING</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                          <?php if ($item['status'] === 'pending'): ?>
+                            <div class="flex items-center justify-end gap-2">
+                              <form method="POST" action="<?= app_url('admin/index.php?tab=withdrawals') ?>" onsubmit="return confirm('Approve this withdrawal of ৳<?= $item['amount_bdt'] ?>?');">
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="admin_action" value="review_transaction">
+                                <input type="hidden" name="tx_id" value="<?= sanitize_output($item['id']) ?>">
+                                <input type="hidden" name="decision" value="approved">
+                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-colors shadow-sm">Approve</button>
+                              </form>
+
+                              <form method="POST" action="<?= app_url('admin/index.php?tab=withdrawals') ?>" onsubmit="return confirm('Reject and REFUND this withdrawal of ৳<?= $item['amount_bdt'] ?>?');">
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="admin_action" value="review_transaction">
+                                <input type="hidden" name="tx_id" value="<?= sanitize_output($item['id']) ?>">
+                                <input type="hidden" name="decision" value="rejected">
+                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 font-bold text-xs transition-colors border border-rose-500/30">Reject</button>
+                              </form>
+                            </div>
+                          <?php else: ?>
+                            <span class="text-slate-500 text-[11px]">Processed</span>
+                          <?php endif; ?>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: DEPOSITS -->
+        <?php if ($tab === 'deposits'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800">
+              <h2 class="text-lg font-bold text-white">Deposit Requests</h2>
+              <p class="text-xs text-slate-400">Verify TrxID and approve deposits to credit user balances.</p>
+            </div>
+
+            <?php
+            $dList = [];
+            if ($db) {
+                try {
+                    $dStmt = $db->query("SELECT * FROM wallet_transactions WHERE type = 'deposit' ORDER BY created_at DESC LIMIT 200");
+                    $dList = $dStmt->fetchAll();
+                } catch (Exception $e) {}
+            }
+            ?>
+
+            <?php if (empty($dList)): ?>
+              <div class="p-12 text-center text-slate-400 text-xs">No deposit records found in database.</div>
+            <?php else: ?>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950/60 text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+                    <tr>
+                      <th class="py-3.5 px-4">User UID</th>
+                      <th class="py-3.5 px-4">Amount</th>
+                      <th class="py-3.5 px-4">Method</th>
+                      <th class="py-3.5 px-4">TrxID / Sender</th>
+                      <th class="py-3.5 px-4">Date / Time</th>
+                      <th class="py-3.5 px-4">Status</th>
+                      <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/60">
+                    <?php foreach ($dList as $item): ?>
+                      <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3.5 px-4 font-mono font-bold text-white"><?= sanitize_output($item['user_id']) ?></td>
+                        <td class="py-3.5 px-4 font-black text-emerald-400 text-sm">৳<?= number_format($item['amount_bdt'], 2) ?></td>
+                        <td class="py-3.5 px-4 uppercase font-bold text-blue-400"><?= sanitize_output($item['method'] ?? 'bKash') ?></td>
+                        <td class="py-3.5 px-4 font-mono text-slate-200">
+                          <span class="font-bold text-white"><?= sanitize_output($item['trx_id'] ?? 'N/A') ?></span>
+                          <?php if (!empty($item['account_number'])): ?>
+                            <span class="text-slate-400 text-[11px] block"><?= sanitize_output($item['account_number']) ?></span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400"><?= $item['created_at'] ?></td>
+                        <td class="py-3.5 px-4">
+                          <?php if ($item['status'] === 'completed'): ?>
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[10px]">COMPLETED</span>
+                          <?php elseif ($item['status'] === 'rejected'): ?>
+                            <span class="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-[10px]">REJECTED</span>
+                          <?php else: ?>
+                            <span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-[10px] animate-pulse">PENDING</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                          <?php if ($item['status'] === 'pending'): ?>
+                            <div class="flex items-center justify-end gap-2">
+                              <form method="POST" action="<?= app_url('admin/index.php?tab=deposits') ?>" onsubmit="return confirm('Approve deposit of ৳<?= $item['amount_bdt'] ?> for <?= $item['user_id'] ?>?');">
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="admin_action" value="review_transaction">
+                                <input type="hidden" name="tx_id" value="<?= sanitize_output($item['id']) ?>">
+                                <input type="hidden" name="decision" value="approved">
+                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-colors shadow-sm">Credit Balance</button>
+                              </form>
+
+                              <form method="POST" action="<?= app_url('admin/index.php?tab=deposits') ?>" onsubmit="return confirm('Reject deposit transaction?');">
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="admin_action" value="review_transaction">
+                                <input type="hidden" name="tx_id" value="<?= sanitize_output($item['id']) ?>">
+                                <input type="hidden" name="decision" value="rejected">
+                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 font-bold text-xs transition-colors border border-rose-500/30">Reject</button>
+                              </form>
+                            </div>
+                          <?php else: ?>
+                            <span class="text-slate-500 text-[11px]">Processed</span>
+                          <?php endif; ?>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: USERS -->
+        <?php if ($tab === 'users'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-bold text-white">User Accounts Directory</h2>
+                <p class="text-xs text-slate-400">Manage user profiles, edit balances, assign blue badges, and enforce status.</p>
+              </div>
+            </div>
+
+            <?php
+            $usersList = [];
+            if ($db) {
+                try {
+                    $uStmt = $db->query("SELECT * FROM users ORDER BY id DESC LIMIT 150");
+                    $usersList = $uStmt->fetchAll();
+                } catch (Exception $e) {}
+            }
+            ?>
+
+            <?php if (empty($usersList)): ?>
+              <div class="p-12 text-center text-slate-400 text-xs">No user records found in database.</div>
+            <?php else: ?>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950/60 text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+                    <tr>
+                      <th class="py-3.5 px-4">User</th>
+                      <th class="py-3.5 px-4">UID</th>
+                      <th class="py-3.5 px-4">Balances (BDT)</th>
+                      <th class="py-3.5 px-4">Badge / Verification</th>
+                      <th class="py-3.5 px-4">Referrals</th>
+                      <th class="py-3.5 px-4">Status</th>
+                      <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/60">
+                    <?php foreach ($usersList as $u): ?>
+                      <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3.5 px-4">
+                          <div class="flex items-center gap-3">
+                            <img src="<?= sanitize_output($u['avatar'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150') ?>" class="w-8 h-8 rounded-full object-cover border border-slate-700" alt="Avatar">
+                            <div>
+                              <div class="font-bold text-white"><?= sanitize_output($u['name']) ?></div>
+                              <div class="text-[11px] text-slate-400"><?= sanitize_output($u['email']) ?></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-emerald-400"><?= sanitize_output($u['uid']) ?></td>
+                        <td class="py-3.5 px-4">
+                          <div class="text-white font-semibold">Earn: <span class="text-emerald-400 font-bold">৳<?= number_format($u['earning_balance_bdt'], 2) ?></span></div>
+                          <div class="text-slate-400 text-[11px]">Dep: ৳<?= number_format($u['deposit_balance_bdt'], 2) ?></div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                          <?php if ($u['has_blue_badge']): ?>
+                            <span class="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold text-[10px]">Blue Badge</span>
+                          <?php else: ?>
+                            <span class="text-slate-500 text-[11px]">Standard</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="py-3.5 px-4">
+                          <div class="text-white font-mono"><?= (int)$u['referred_users_count'] ?> users</div>
+                          <div class="text-slate-400 text-[11px]">Code: <?= sanitize_output($u['referral_code']) ?></div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                          <?php if ($u['status'] === 'banned'): ?>
+                            <span class="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-[10px]">BANNED</span>
+                          <?php else: ?>
+                            <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[10px]">ACTIVE</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                          <div class="flex items-center justify-end gap-2">
+                            <!-- Quick Balance Modal Form -->
+                            <details class="relative inline-block">
+                              <summary class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white cursor-pointer list-none font-semibold text-xs">Edit Balances</summary>
+                              <div class="absolute right-0 mt-2 w-64 p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl z-20 text-left">
+                                <form method="POST" action="<?= app_url('admin/index.php?tab=users') ?>" class="space-y-3">
+                                  <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                  <input type="hidden" name="admin_action" value="update_user_balance">
+                                  <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                                  <div>
+                                    <label class="block text-[10px] uppercase font-bold text-slate-400">Earning BDT</label>
+                                    <input type="number" step="0.01" name="earning_balance_bdt" value="<?= $u['earning_balance_bdt'] ?>" class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs">
+                                  </div>
+                                  <div>
+                                    <label class="block text-[10px] uppercase font-bold text-slate-400">Deposit BDT</label>
+                                    <input type="number" step="0.01" name="deposit_balance_bdt" value="<?= $u['deposit_balance_bdt'] ?>" class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs">
+                                  </div>
+                                  <button type="submit" class="w-full py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs">Save Changes</button>
+                                </form>
+                              </div>
+                            </details>
+
+                            <!-- Toggle Blue Badge Form -->
+                            <form method="POST" action="<?= app_url('admin/index.php?tab=users') ?>" class="inline-block">
+                              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                              <input type="hidden" name="admin_action" value="toggle_blue_badge">
+                              <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                              <input type="hidden" name="has_blue_badge" value="<?= $u['has_blue_badge'] ? '0' : '1' ?>">
+                              <button type="submit" class="px-2.5 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 font-semibold text-xs">
+                                <?= $u['has_blue_badge'] ? 'Revoke Badge' : 'Give Badge' ?>
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: SUBMISSIONS -->
+        <?php if ($tab === 'submissions'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800">
+              <h2 class="text-lg font-bold text-white">Worker Task Proofs</h2>
+              <p class="text-xs text-slate-400">Inspect submitted proof text and screenshots, then approve or reject with feedback.</p>
+            </div>
+
+            <?php
+            $subsList = [];
+            if ($db) {
+                try {
+                    $sStmt = $db->query("SELECT s.*, j.title as job_title FROM task_submissions s LEFT JOIN jobs j ON s.job_id = j.id ORDER BY s.submitted_at DESC LIMIT 150");
+                    $subsList = $sStmt->fetchAll();
+                } catch (Exception $e) {}
+            }
+            ?>
+
+            <?php if (empty($subsList)): ?>
+              <div class="p-12 text-center text-slate-400 text-xs">No task submissions found in database.</div>
+            <?php else: ?>
+              <div class="divide-y divide-slate-800/60">
+                <?php foreach ($subsList as $s): ?>
+                  <div class="p-6 hover:bg-slate-800/20 transition-colors">
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div class="space-y-2 max-w-2xl">
+                        <div class="flex items-center gap-2">
+                          <span class="font-bold text-white text-sm"><?= sanitize_output($s['worker_name']) ?></span>
+                          <span class="text-slate-400 font-mono text-xs">(UID: <?= sanitize_output($s['worker_id']) ?>)</span>
+                          <span class="text-slate-500">&bull;</span>
+                          <span class="text-emerald-400 font-bold text-xs">৳<?= number_format($s['earned_bdt'], 2) ?></span>
+                        </div>
+                        <div class="text-xs text-slate-300 font-semibold">Job: <?= sanitize_output($s['job_title'] ?: $s['job_id']) ?></div>
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200">
+                          <strong>Proof Submitted:</strong><br>
+                          <?= nl2br(sanitize_output($s['proof_text'])) ?>
+                        </div>
+                        <?php if (!empty($s['proof_url'])): ?>
+                          <div class="text-xs">
+                            <span class="text-slate-400">Proof URL: </span>
+                            <a href="<?= sanitize_output($s['proof_url']) ?>" target="_blank" class="text-emerald-400 hover:underline"><?= sanitize_output($s['proof_url']) ?></a>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+
+                      <div class="shrink-0 text-right space-y-3">
+                        <div>
+                          <?php if ($s['status'] === 'approved'): ?>
+                            <span class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs">APPROVED</span>
+                          <?php elseif ($s['status'] === 'rejected'): ?>
+                            <span class="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-xs">REJECTED</span>
+                          <?php else: ?>
+                            <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-xs">PENDING REVIEW</span>
+                          <?php endif; ?>
+                        </div>
+
+                        <?php if ($s['status'] === 'pending'): ?>
+                          <div class="flex items-center justify-end gap-2 pt-2">
+                            <form method="POST" action="<?= app_url('admin/index.php?tab=submissions') ?>">
+                              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                              <input type="hidden" name="admin_action" value="review_submission">
+                              <input type="hidden" name="submission_id" value="<?= sanitize_output($s['id']) ?>">
+                              <input type="hidden" name="decision" value="approved">
+                              <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-colors shadow-sm">Approve & Credit</button>
+                            </form>
+
+                            <form method="POST" action="<?= app_url('admin/index.php?tab=submissions') ?>" class="flex items-center gap-1">
+                              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                              <input type="hidden" name="admin_action" value="review_submission">
+                              <input type="hidden" name="submission_id" value="<?= sanitize_output($s['id']) ?>">
+                              <input type="hidden" name="decision" value="rejected">
+                              <button type="submit" class="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition-colors">Reject</button>
+                            </form>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: JOBS -->
+        <?php if ($tab === 'jobs'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800">
+              <h2 class="text-lg font-bold text-white">Marketplace Jobs</h2>
+              <p class="text-xs text-slate-400">All micro jobs posted by employers and active on the platform.</p>
+            </div>
+
+            <?php
+            $allJobs = [];
+            if ($db) {
+                try {
+                    $jStmt = $db->query("SELECT * FROM jobs ORDER BY id DESC LIMIT 150");
+                    $allJobs = $jStmt->fetchAll();
+                } catch (Exception $e) {}
+            }
+            ?>
+
+            <?php if (empty($allJobs)): ?>
+              <div class="p-12 text-center text-slate-400 text-xs">No jobs posted in database yet.</div>
+            <?php else: ?>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950/60 text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+                    <tr>
+                      <th class="py-3.5 px-4">Job Title</th>
+                      <th class="py-3.5 px-4">Category</th>
+                      <th class="py-3.5 px-4">Pay / Task</th>
+                      <th class="py-3.5 px-4">Slots</th>
+                      <th class="py-3.5 px-4">Employer</th>
+                      <th class="py-3.5 px-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/60">
+                    <?php foreach ($allJobs as $job): ?>
+                      <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3.5 px-4">
+                          <div class="font-bold text-white"><?= sanitize_output($job['title']) ?></div>
+                          <div class="text-slate-400 text-[11px]"><?= sanitize_output($job['title_bn']) ?></div>
+                        </td>
+                        <td class="py-3.5 px-4 capitalize font-semibold text-emerald-400"><?= sanitize_output($job['category']) ?></td>
+                        <td class="py-3.5 px-4 font-black text-white">৳<?= number_format($job['pay_per_task_bdt'], 2) ?></td>
+                        <td class="py-3.5 px-4 font-mono"><?= $job['completed_slots'] ?> / <?= $job['total_slots'] ?></td>
+                        <td class="py-3.5 px-4"><?= sanitize_output($job['employer_name']) ?></td>
+                        <td class="py-3.5 px-4">
+                          <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[10px] uppercase"><?= sanitize_output($job['status']) ?></span>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: SUPPORT TICKETS -->
+        <?php if ($tab === 'tickets'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800">
+              <h2 class="text-lg font-bold text-white">Support Helpdesk Tickets</h2>
+              <p class="text-xs text-slate-400">View and respond to customer tickets. Admin replies trigger instant MySQL storage and optional SMTP dispatch.</p>
+            </div>
+
+            <?php
+            $ticketRows = [];
+            if ($db) {
+                try {
+                    $tStmt = $db->query("SELECT * FROM support_tickets ORDER BY updated_at DESC LIMIT 100");
+                    $ticketRows = $tStmt->fetchAll();
+                } catch (Exception $e) {}
+            }
+            ?>
+
+            <?php if (empty($ticketRows)): ?>
+              <div class="p-12 text-center text-slate-400 text-xs">No support tickets found in database.</div>
+            <?php else: ?>
+              <div class="divide-y divide-slate-800/60">
+                <?php foreach ($ticketRows as $ticket): ?>
+                  <div class="p-6 hover:bg-slate-800/20 transition-colors">
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div class="space-y-3 flex-1">
+                        <div class="flex items-center gap-3">
+                          <span class="px-2.5 py-0.5 rounded-full bg-slate-800 font-mono text-xs font-bold text-slate-300">#<?= sanitize_output($ticket['id']) ?></span>
+                          <h3 class="font-bold text-white text-sm"><?= sanitize_output($ticket['subject']) ?></h3>
+                          <span class="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold text-[10px] uppercase"><?= sanitize_output($ticket['category']) ?></span>
+                        </div>
+
+                        <div class="text-xs text-slate-400">
+                          By: <strong class="text-white"><?= sanitize_output($ticket['user_name']) ?></strong> (<?= sanitize_output($ticket['user_email']) ?>) &bull; <?= $ticket['created_at'] ?>
+                        </div>
+
+                        <!-- Ticket Conversation History -->
+                        <?php
+                        $msgList = [];
+                        if ($db) {
+                            $mStmt = $db->prepare("SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC");
+                            $mStmt->execute([$ticket['id']]);
+                            $msgList = $mStmt->fetchAll();
+                        }
+                        ?>
+                        <div class="space-y-2 max-w-3xl pt-2">
+                          <?php foreach ($msgList as $m): ?>
+                            <div class="p-3.5 rounded-2xl <?= $m['sender'] === 'admin' ? 'bg-emerald-950/40 border border-emerald-500/20 text-emerald-200 ml-6' : 'bg-slate-950 border border-slate-800 text-slate-200' ?> text-xs">
+                              <div class="flex items-center justify-between font-bold mb-1 text-[11px]">
+                                <span><?= sanitize_output($m['sender_name']) ?> (<?= strtoupper($m['sender']) ?>)</span>
+                                <span class="text-slate-500 font-normal"><?= $m['created_at'] ?></span>
+                              </div>
+                              <div><?= nl2br(sanitize_output($m['message'])) ?></div>
+                            </div>
+                          <?php endforeach; ?>
+                        </div>
+
+                        <!-- Admin Reply Form -->
+                        <form method="POST" action="<?= app_url('admin/index.php?tab=tickets') ?>" class="space-y-3 pt-3 max-w-3xl">
+                          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                          <input type="hidden" name="admin_action" value="reply_ticket">
+                          <input type="hidden" name="ticket_id" value="<?= sanitize_output($ticket['id']) ?>">
+                          <textarea name="reply_message" rows="2" required placeholder="Type your reply to user..." class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-500"></textarea>
+                          <div class="flex items-center justify-between">
+                            <select name="ticket_status" class="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs">
+                              <option value="in_progress" <?= $ticket['status'] === 'in_progress' ? 'selected' : '' ?>>Status: In Progress</option>
+                              <option value="resolved" <?= $ticket['status'] === 'resolved' ? 'selected' : '' ?>>Status: Resolved</option>
+                              <option value="closed" <?= $ticket['status'] === 'closed' ? 'selected' : '' ?>>Status: Closed</option>
+                            </select>
+                            <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-colors shadow-sm">Send Admin Reply</button>
+                          </div>
+                        </form>
+                      </div>
+
+                      <div class="shrink-0">
+                        <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs uppercase"><?= sanitize_output($ticket['status']) ?></span>
+                      </div>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: SITE SETTINGS -->
+        <?php if ($tab === 'settings'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-8 max-w-4xl">
+            <h2 class="text-xl font-black text-white mb-1">General Site & Branding Settings</h2>
+            <p class="text-xs text-slate-400 mb-8">Configurations are stored in MySQL <code>settings</code> table and dynamically served across the platform.</p>
+
+            <form method="POST" action="<?= app_url('admin/index.php?tab=settings') ?>" enctype="multipart/form-data" class="space-y-6">
               <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-              <input type="hidden" name="admin_action" value="update_ticket_status">
-              <input type="hidden" name="ticket_id" value="<?= sanitize_output($activeTicket['id']) ?>">
-              <select name="status" class="px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-white">
-                <option value="open" <?= $activeTicket['status'] === 'open' ? 'selected' : '' ?>>Open</option>
-                <option value="in_progress" <?= $activeTicket['status'] === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
-                <option value="resolved" <?= $activeTicket['status'] === 'resolved' ? 'selected' : '' ?>>Resolved</option>
-                <option value="closed" <?= $activeTicket['status'] === 'closed' ? 'selected' : '' ?>>Closed</option>
-              </select>
-              <button type="submit" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700">
-                Update
-              </button>
+              <input type="hidden" name="admin_action" value="update_site_settings">
+
+              <!-- Logo & Favicon Previews and Uploads -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-slate-950/80 border border-slate-800">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Website Logo</label>
+                  <div class="flex items-center gap-4 mb-3">
+                    <img src="<?= sanitize_output($siteLogo) ?>" alt="Site Logo" class="h-12 max-w-[160px] object-contain rounded-lg p-1 bg-slate-900 border border-slate-800" onerror="this.src='/assets/logo.png'">
+                    <span class="text-xs text-slate-400">Current active logo</span>
+                  </div>
+                  <input type="file" name="logo_file" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Website Favicon</label>
+                  <div class="flex items-center gap-4 mb-3">
+                    <img src="<?= sanitize_output($siteFavicon) ?>" alt="Site Favicon" class="w-10 h-10 object-contain rounded-lg p-1 bg-slate-900 border border-slate-800" onerror="this.src='/favicon.ico'">
+                    <span class="text-xs text-slate-400">Browser tab icon</span>
+                  </div>
+                  <input type="file" name="favicon_file" accept="image/*,.ico" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+                </div>
+              </div>
+
+              <!-- General Names -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Website Name (English)</label>
+                  <input type="text" name="site_name" value="<?= sanitize_output(get_setting('site_name', 'Amader Job Online')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Website Name (বাংলা)</label>
+                  <input type="text" name="site_name_bn" value="<?= sanitize_output(get_setting('site_name_bn', 'আমাদের জব অনলাইন')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+              </div>
+
+              <!-- Subtitles -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Subtitle (English)</label>
+                  <input type="text" name="site_subtitle" value="<?= sanitize_output(get_setting('site_subtitle', 'Leading Micro Task Platform')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Subtitle (বাংলা)</label>
+                  <input type="text" name="site_subtitle_bn" value="<?= sanitize_output(get_setting('site_subtitle_bn', 'বাংলাদেশের বিশ্বস্ত মাইক্রো টাস্ক প্ল্যাটফর্ম')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+              </div>
+
+              <!-- Contact Numbers -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Support Email</label>
+                  <input type="email" name="support_email" value="<?= sanitize_output(get_setting('support_email', 'support@amaderjob.com')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">WhatsApp Helpline</label>
+                  <input type="text" name="whatsapp_number" value="<?= sanitize_output(get_setting('whatsapp_number', '+8801700000000')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Phone Helpline</label>
+                  <input type="text" name="helpline_phone" value="<?= sanitize_output(get_setting('helpline_phone', '+8801800000000')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+              </div>
+
+              <!-- Financial Thresholds -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">USD to BDT Rate</label>
+                  <input type="number" step="0.01" name="usd_to_bdt_rate" value="<?= sanitize_output(get_setting('usd_to_bdt_rate', '120.00')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Min Deposit (BDT)</label>
+                  <input type="number" step="0.01" name="min_deposit_bdt" value="<?= sanitize_output(get_setting('min_deposit_bdt', '50.00')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Min Withdraw (BDT)</label>
+                  <input type="number" step="0.01" name="min_withdraw_bdt" value="<?= sanitize_output(get_setting('min_withdraw_bdt', '100.00')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+              </div>
+
+              <!-- Notice Marquee -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Top Banner Notice (English)</label>
+                <textarea name="notice_marquee" rows="2" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:border-emerald-500 focus:outline-none"><?= sanitize_output(get_setting('notice_marquee', '')) ?></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Top Banner Notice (বাংলা)</label>
+                <textarea name="notice_marquee_bn" rows="2" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:border-emerald-500 focus:outline-none"><?= sanitize_output(get_setting('notice_marquee_bn', '')) ?></textarea>
+              </div>
+
+              <!-- Maintenance Mode -->
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <input type="checkbox" id="maintMode" name="maintenance_mode" value="1" <?= get_setting('maintenance_mode', '0') === '1' ? 'checked' : '' ?> class="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500">
+                <label for="maintMode" class="text-xs font-bold text-white cursor-pointer">
+                  Activate Maintenance Mode (Visitors will see a maintenance notice; admins can still manage)
+                </label>
+              </div>
+
+              <button type="submit" class="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Save Website Settings</button>
             </form>
           </div>
+        <?php endif; ?>
 
-          <!-- Message Thread -->
-          <div class="space-y-4 max-h-[500px] overflow-y-auto p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
-            <?php foreach ($ticketMessages as $m): ?>
-              <?php $isAdmin = ($m['sender'] === 'admin'); ?>
-              <div class="flex flex-col <?= $isAdmin ? 'items-end' : 'items-start' ?>">
-                <div class="flex items-center gap-2 mb-1 px-1">
-                  <span class="text-[10px] font-bold <?= $isAdmin ? 'text-emerald-400' : 'text-blue-400' ?>">
-                    <?= sanitize_output($m['sender_name'] ?: ($isAdmin ? 'Support Team' : 'User')) ?>
-                  </span>
-                  <span class="text-[10px] text-slate-500 font-mono">
-                    <?= date('M j, g:i A', strtotime($m['created_at'])) ?>
-                  </span>
-                </div>
-                <div class="p-4 rounded-2xl max-w-[85%] text-xs sm:text-sm leading-relaxed whitespace-pre-wrap <?= $isAdmin ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-tl-none' ?>">
-                  <?= sanitize_output($m['message']) ?>
-                </div>
-              </div>
-            <?php endforeach; ?>
-          </div>
+        <!-- TAB: REFERRAL -->
+        <?php if ($tab === 'referral'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-8 max-w-2xl">
+            <h2 class="text-xl font-black text-white mb-1">Referral Program Configurations</h2>
+            <p class="text-xs text-slate-400 mb-8">Manage affiliate commissions and referral bonuses in MySQL.</p>
 
-          <!-- Admin Reply Form -->
-          <form method="POST" action="?tab=tickets&ticket_id=<?= urlencode($activeTicket['id']) ?>" class="space-y-4 pt-2">
-            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-            <input type="hidden" name="admin_action" value="reply_ticket">
-            <input type="hidden" name="ticket_id" value="<?= sanitize_output($activeTicket['id']) ?>">
+            <form method="POST" action="<?= app_url('admin/index.php?tab=referral') ?>" class="space-y-6">
+              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+              <input type="hidden" name="admin_action" value="update_referral_settings">
 
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Write Official Support Reply</label>
-              <textarea name="reply_message" rows="4" required placeholder="Write clear, professional response to the user..." class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 leading-relaxed"></textarea>
-            </div>
-
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 font-bold">Set Status After Reply:</span>
-                <select name="ticket_status" class="px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-bold text-white">
-                  <option value="in_progress">In Progress (Replied)</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <input type="checkbox" id="refEnabled" name="referral_enabled" value="1" <?= get_setting('referral_enabled', '1') === '1' ? 'checked' : '' ?> class="w-4 h-4 rounded text-emerald-500">
+                <label for="refEnabled" class="text-xs font-bold text-white cursor-pointer">Enable Referral & Affiliate System</label>
               </div>
 
-              <button type="submit" class="py-3 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2">
-                <span>Send Official Reply</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-              </button>
-            </div>
-          </form>
-        </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Referral Commission Rate (%)</label>
+                <input type="number" step="0.1" name="referral_percentage" value="<?= sanitize_output(get_setting('referral_percentage', '5.0')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                <p class="text-[11px] text-slate-400 mt-1">Percentage of deposit or task earnings rewarded to referrer.</p>
+              </div>
 
-      <?php else: ?>
-        <!-- Tickets Overview Table -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
-          <div class="pb-6 border-b border-slate-800 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 class="text-lg font-black text-white">User Support Tickets</h3>
-              <p class="text-xs text-slate-400 mt-1">Official helpdesk tickets submitted by users</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">Open Tickets: <?= $stats['tickets_open'] ?></span>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Minimum Referral Bonus Payout (BDT)</label>
+                <input type="number" step="1" name="referral_minimum" value="<?= sanitize_output(get_setting('referral_minimum', '100')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+              </div>
+
+              <button type="submit" class="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Save Referral Settings</button>
+            </form>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: SMTP MAILER -->
+        <?php if ($tab === 'smtp'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-8 max-w-3xl">
+            <h2 class="text-xl font-black text-white mb-1">SMTP Email Dispatch Configuration</h2>
+            <p class="text-xs text-slate-400 mb-8">Configure your cPanel Webmail or external SMTP server for OTPs and ticket notifications.</p>
+
+            <form method="POST" action="<?= app_url('admin/index.php?tab=smtp') ?>" class="space-y-6">
+              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+              <input type="hidden" name="admin_action" value="update_smtp_settings">
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Host</label>
+                  <input type="text" name="smtp_host" value="<?= sanitize_output(get_setting('smtp_host', 'mail.amaderjob.com')) ?>" placeholder="mail.amaderjob.com" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Port</label>
+                  <input type="text" name="smtp_port" value="<?= sanitize_output(get_setting('smtp_port', '587')) ?>" placeholder="587 / 465" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Username / Email</label>
+                  <input type="text" name="smtp_username" value="<?= sanitize_output(get_setting('smtp_username', 'info@amaderjob.com')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">SMTP Password</label>
+                  <input type="password" name="smtp_password" placeholder="Leave blank to keep unchanged" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Encryption</label>
+                  <select name="smtp_encryption" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                    <option value="tls" <?= get_setting('smtp_encryption', 'tls') === 'tls' ? 'selected' : '' ?>>TLS (Port 587)</option>
+                    <option value="ssl" <?= get_setting('smtp_encryption', 'tls') === 'ssl' ? 'selected' : '' ?>>SSL (Port 465)</option>
+                    <option value="none" <?= get_setting('smtp_encryption', 'tls') === 'none' ? 'selected' : '' ?>>None (Port 25)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">From Email</label>
+                  <input type="email" name="smtp_from_email" value="<?= sanitize_output(get_setting('smtp_from_email', 'info@amaderjob.com')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">From Name</label>
+                  <input type="text" name="smtp_from_name" value="<?= sanitize_output(get_setting('smtp_from_name', 'Amader Job')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm">
+                </div>
+              </div>
+
+              <button type="submit" class="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Save SMTP Credentials</button>
+            </form>
+
+            <div class="mt-10 pt-8 border-t border-slate-800">
+              <h3 class="text-sm font-bold text-white mb-2">Send Live Test Email</h3>
+              <form method="POST" action="<?= app_url('admin/index.php?tab=smtp') ?>" class="flex gap-3">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="admin_action" value="test_smtp_email">
+                <input type="email" name="test_recipient_email" required placeholder="your-email@gmail.com" class="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs">
+                <button type="submit" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition-colors">Send Test Email</button>
+              </form>
             </div>
           </div>
+        <?php endif; ?>
 
-          <?php
-          $tickets = [];
-          if ($db) {
-              try {
-                  $stmt = $db->query("SELECT * FROM support_tickets ORDER BY unread_admin DESC, updated_at DESC LIMIT 50");
-                  $tickets = $stmt->fetchAll();
-              } catch (Exception $e) {}
-          }
-          ?>
+        <!-- TAB: SECURITY (ADMIN PASSWORD) -->
+        <?php if ($tab === 'security'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-8 max-w-md">
+            <h2 class="text-xl font-black text-white mb-1">Change Admin Password</h2>
+            <p class="text-xs text-slate-400 mb-8">Update the login password for admin account: <strong class="text-white"><?= sanitize_output($adminUsername) ?></strong></p>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead>
-                <tr class="text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                  <th class="py-3 px-4">Ticket ID</th>
-                  <th class="py-3 px-4">User</th>
-                  <th class="py-3 px-4">Subject</th>
-                  <th class="py-3 px-4">Category</th>
-                  <th class="py-3 px-4">Priority</th>
-                  <th class="py-3 px-4">Status</th>
-                  <th class="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800/60">
-                <?php if (empty($tickets)): ?>
-                  <tr>
-                    <td colspan="7" class="py-8 text-center text-slate-500 text-xs">No support tickets found.</td>
-                  </tr>
-                <?php endif; ?>
-                <?php foreach ($tickets as $t): ?>
-                  <tr class="hover:bg-slate-800/30 <?= $t['unread_admin'] ? 'bg-emerald-500/5' : '' ?>">
-                    <td class="py-3 px-4 font-mono font-bold text-white flex items-center gap-2">
-                      <span>#<?= sanitize_output($t['id']) ?></span>
-                      <?php if ($t['unread_admin']): ?>
-                        <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0" title="Unread User Message"></span>
-                      <?php endif; ?>
-                    </td>
-                    <td class="py-3 px-4">
-                      <div class="font-bold text-white text-xs"><?= sanitize_output($t['user_name']) ?></div>
-                      <div class="text-[11px] text-slate-400 font-mono"><?= sanitize_output($t['user_email'] ?: $t['user_id']) ?></div>
-                    </td>
-                    <td class="py-3 px-4 font-semibold text-slate-200 text-xs max-w-xs truncate">
-                      <?= sanitize_output($t['subject']) ?>
-                    </td>
-                    <td class="py-3 px-4 uppercase text-[11px] font-bold text-slate-400">
-                      <?= sanitize_output($t['category']) ?>
-                    </td>
-                    <td class="py-3 px-4">
-                      <span class="px-2 py-0.5 rounded-md text-[10px] uppercase font-bold <?= $t['priority'] === 'urgent' ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-300' ?>">
-                        <?= sanitize_output($t['priority']) ?>
-                      </span>
-                    </td>
-                    <td class="py-3 px-4">
-                      <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= $t['status'] === 'resolved' ? 'bg-emerald-500/15 text-emerald-400' : ($t['status'] === 'open' ? 'bg-amber-500/15 text-amber-400' : ($t['status'] === 'in_progress' ? 'bg-blue-500/15 text-blue-400' : 'bg-slate-800 text-slate-400')) ?>">
-                        <?= ucfirst(str_replace('_', ' ', $t['status'])) ?>
-                      </span>
-                    </td>
-                    <td class="py-3 px-4 text-right">
-                      <a href="?tab=tickets&ticket_id=<?= urlencode($t['id']) ?>" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition inline-flex items-center gap-1">
-                        <span>View & Reply</span>
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                      </a>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
+            <form method="POST" action="<?= app_url('admin/index.php?tab=security') ?>" class="space-y-5">
+              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+              <input type="hidden" name="admin_action" value="change_admin_password">
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">New Password</label>
+                <input type="password" name="new_admin_password" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Confirm New Password</label>
+                <input type="password" name="confirm_admin_password" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+              </div>
+
+              <button type="submit" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Update Admin Password</button>
+            </form>
           </div>
-        </div>
-      <?php endif; ?>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <!-- TAB: SITE SETTINGS -->
-    <?php if ($tab === 'settings'): ?>
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl max-w-4xl">
-        <h3 class="text-lg font-black text-white mb-6">Website General Settings</h3>
-        <form method="POST" action="?tab=settings" class="space-y-6">
-          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-          <input type="hidden" name="admin_action" value="update_site_settings">
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Site Name (EN)</label>
-              <input type="text" name="site_name" value="<?= sanitize_output(get_setting('site_name', 'Amader Job Online')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Site Name (BN)</label>
-              <input type="text" name="site_name_bn" value="<?= sanitize_output(get_setting('site_name_bn', 'আমাদের জব অনলাইন')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Min Deposit (BDT)</label>
-              <input type="number" step="0.01" name="min_deposit_bdt" value="<?= sanitize_output(get_setting('min_deposit_bdt', '50.00')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Min Withdraw (BDT)</label>
-              <input type="number" step="0.01" name="min_withdraw_bdt" value="<?= sanitize_output(get_setting('min_withdraw_bdt', '100.00')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-300 mb-2">USD to BDT Rate</label>
-              <input type="number" step="0.01" name="usd_to_bdt_rate" value="<?= sanitize_output(get_setting('usd_to_bdt_rate', '120.00')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Notice Marquee (Bengali)</label>
-            <textarea name="notice_marquee_bn" rows="2" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm"><?= sanitize_output(get_setting('notice_marquee_bn', '')) ?></textarea>
-          </div>
-
-          <div class="flex items-center justify-between pt-4 border-t border-slate-800">
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" name="maintenance_mode" value="1" <?= get_setting('maintenance_mode', '0') === '1' ? 'checked' : '' ?> class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700">
-              <span class="text-sm font-semibold text-slate-300">Enable Maintenance Mode</span>
-            </label>
-
-            <button type="submit" class="py-3 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-600/30">
-              Save Settings
-            </button>
-          </div>
-        </form>
       </div>
-    <?php endif; ?>
+    </main>
+  </div>
 
-    <!-- TAB: ADMIN PASSWORD -->
-    <?php if ($tab === 'profile'): ?>
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl max-w-md">
-        <h3 class="text-lg font-black text-white mb-6">Change Admin Password</h3>
-        <form method="POST" action="?tab=profile" class="space-y-4">
-          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-          <input type="hidden" name="admin_action" value="change_admin_password">
+  <!-- Mobile Drawer Toggle Script -->
+  <script>
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const drawer = document.getElementById('sidebarDrawer');
+    const backdrop = document.getElementById('mobileDrawerBackdrop');
+    const closeBtn = document.getElementById('closeDrawerBtn');
 
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-300 mb-2">New Password</label>
-            <input type="password" name="new_admin_password" required minlength="6" placeholder="••••••••" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-          </div>
+    function openDrawer() {
+      drawer.classList.remove('-translate-x-full');
+      backdrop.classList.remove('hidden');
+    }
 
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-300 mb-2">Confirm New Password</label>
-            <input type="password" name="confirm_admin_password" required minlength="6" placeholder="••••••••" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500">
-          </div>
+    function closeDrawer() {
+      drawer.classList.add('-translate-x-full');
+      backdrop.classList.add('hidden');
+    }
 
-          <button type="submit" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-600/30 transition-all">
-            Update Password
-          </button>
-        </form>
-      </div>
-    <?php endif; ?>
-  </main>
+    if (mobileBtn) mobileBtn.addEventListener('click', openDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  </script>
 </body>
 </html>

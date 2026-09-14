@@ -869,7 +869,7 @@ export default function App() {
       />
 
       {/* 2. Main Page Container */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-12 overflow-x-hidden w-full">
+      <main className={currentView === 'support' ? "w-full max-w-7xl mx-auto px-1 sm:px-3 lg:px-4 pt-1 sm:pt-2 pb-20 md:pb-2 overflow-x-hidden" : "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-12 overflow-x-hidden w-full"}>
         
         {/* VIEW: Dedicated Login Page */}
         {currentView === 'login' && (

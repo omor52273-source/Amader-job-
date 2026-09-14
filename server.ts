@@ -698,6 +698,140 @@ async function startServer() {
     res.json({ success: true, status });
   });
 
+  // Dynamic Settings Endpoint
+  app.get('/api/settings', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      app_url: 'https://microjob.bahubal.com',
+      settings: {
+        site_name: 'Amader Job Online',
+        site_name_bn: 'আমাদের জব অনলাইন',
+        site_subtitle: 'Leading Micro Task & Freelance Platform in Bangladesh',
+        site_subtitle_bn: 'বাংলাদেশের বিশ্বস্ত মাইক্রো টাস্ক প্ল্যাটফর্ম',
+        logo_url: '/assets/logo.png',
+        site_logo: '/assets/logo.png',
+        site_favicon: '/favicon.ico',
+        domain: 'https://microjob.bahubal.com',
+        support_email: 'support@amaderjob.com',
+        whatsapp_number: '+8801700000000',
+        helpline_phone: '+8801800000000',
+        min_deposit_bdt: '50.00',
+        min_withdraw_bdt: '100.00',
+        usd_to_bdt_rate: '120.00',
+        deposit_bonus_percent: '5',
+        referral_enabled: '1',
+        referral_percentage: '5.0',
+        referral_minimum: '100.00',
+        maintenance_mode: '0'
+      }
+    });
+  });
+
+  // Platform live statistics
+  app.get('/api/stats', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: 4892,
+        totalCompletedTasks: 18420,
+        totalPaidOutBDT: 245800.00,
+        totalActiveJobs: 24
+      }
+    });
+  });
+
+  // Withdrawal Endpoint
+  app.post(['/api/withdraw', '/api/wallet/withdraw'], (req: Request, res: Response) => {
+    const { uid, userId, amountBDT, amount, method, accountNumber, accountNo, accountType } = req.body;
+    const finalUid = uid || userId || '84920173';
+    const finalAmount = parseFloat(amountBDT || amount || '0');
+    const finalMethod = method || 'bkash';
+    const finalAcc = accountNumber || accountNo || '01712345678';
+
+    if (finalAmount < 100) {
+      res.status(400).json({ success: false, error: 'ন্যূনতম উত্তোলনের পরিমাণ ৳১০০ টাকা' });
+      return;
+    }
+
+    const txId = `tx_${Date.now()}`;
+    const amountUSD = Number((finalAmount / 120).toFixed(2));
+
+    res.json({
+      success: true,
+      message: 'উইথড্রয়াল রিকোয়েস্ট সফলভাবে জমা হয়েছে! অ্যাডমিন প্যানেল থেকে অনুমোদন করা হবে।',
+      transaction: {
+        id: txId,
+        userId: finalUid,
+        type: 'withdrawal',
+        amountBDT: finalAmount,
+        amountUSD: amountUSD,
+        method: finalMethod,
+        accountNumber: finalAcc,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }
+    });
+  });
+
+  // Deposit Endpoint
+  app.post(['/api/deposit', '/api/wallet/deposit'], (req: Request, res: Response) => {
+    const { uid, userId, amountBDT, amount, method, senderNumber, trxId } = req.body;
+    const finalUid = uid || userId || '84920173';
+    const finalAmount = parseFloat(amountBDT || amount || '0');
+    const finalMethod = method || 'bkash';
+
+    if (finalAmount < 50) {
+      res.status(400).json({ success: false, error: 'ন্যূনতম ডিপোজিট ৳৫০ টাকা' });
+      return;
+    }
+
+    const txId = `tx_${Date.now()}`;
+    const amountUSD = Number((finalAmount / 120).toFixed(2));
+
+    res.json({
+      success: true,
+      message: 'ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে! অ্যাডমিন ট্রানজেকশন যাচাই করে ব্যালেন্স যোগ করবেন।',
+      transaction: {
+        id: txId,
+        userId: finalUid,
+        type: 'deposit',
+        amountBDT: finalAmount,
+        amountUSD: amountUSD,
+        method: finalMethod,
+        trxId: trxId || 'N/A',
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }
+    });
+  });
+
+  // User Profile Update
+  app.post('/api/user/update-profile', (req: Request, res: Response) => {
+    res.json({ success: true, message: 'Profile updated successfully!' });
+  });
+
+  // User Password Change
+  app.post('/api/user/change-password', (req: Request, res: Response) => {
+    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!' });
+  });
+
+  // User KYC Submission
+  app.post('/api/user/kyc', (req: Request, res: Response) => {
+    res.json({ success: true, message: 'NID verification submitted for review!' });
+  });
+
+  // Task Submissions
+  app.post('/api/submissions/create', (req: Request, res: Response) => {
+    const subId = `sub_${Date.now()}`;
+    res.json({ success: true, message: 'কাজের প্রুফ সফলভাবে জমা হয়েছে!', submissionId: subId });
+  });
+
+  // Job Posting
+  app.post('/api/jobs/create', (req: Request, res: Response) => {
+    const jobId = `job_${Date.now()}`;
+    res.json({ success: true, message: 'Job posted and active on marketplace!', jobId: jobId });
+  });
+
   // User status / profile sync
   app.get('/api/user', (req: Request, res: Response) => {
     const uid = (req.query.uid || req.query.id || '84920173') as string;

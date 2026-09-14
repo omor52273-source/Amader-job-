@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Mail, 
   Inbox, 
   Send, 
   PlusCircle, 
@@ -13,13 +12,19 @@ import {
   MessageSquare, 
   ChevronRight, 
   RefreshCw, 
-  User as UserIcon, 
   CheckCheck, 
   Headphones, 
   X,
   FileText,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Paperclip,
+  Smile,
+  ThumbsUp,
+  Image as ImageIcon,
+  Check,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { UserProfile, Language, SupportTicket, SupportTicketMessage, NotificationItem } from '../types';
 import { StorageService } from '../lib/storage';
@@ -48,6 +53,7 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [toastAlert, setToastAlert] = useState<{ title: string; message: string; ticketId: string } | null>(null);
 
   // Form states for creating a new ticket
@@ -154,11 +160,11 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
     }
   }, [tickets, selectedTicketId, isCreatingTicket]);
 
-  // Periodic polling every 8 seconds for live Messenger chat updates
+  // Periodic polling every 6 seconds for real-time live Messenger chat updates
   useEffect(() => {
     const interval = setInterval(() => {
       fetchTickets(true);
-    }, 8000);
+    }, 6000);
     return () => clearInterval(interval);
   }, [fetchTickets]);
 
@@ -269,11 +275,11 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
   };
 
   // 2. Send user message in conversation
-  const handleSendReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyMessage.trim() || !selectedTicket) return;
+  const handleSendReply = async (e?: React.FormEvent, customText?: string) => {
+    if (e) e.preventDefault();
+    const text = (customText || replyMessage).trim();
+    if (!text || !selectedTicket) return;
 
-    const text = replyMessage.trim();
     setReplyMessage('');
 
     const now = new Date().toISOString();
@@ -379,13 +385,13 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
   const getPriorityBadge = (p: SupportTicket['priority']) => {
     switch (p) {
       case 'urgent':
-        return <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-black border border-rose-200">অতীব জরুরি</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black border border-rose-500/20">অতীব জরুরি</span>;
       case 'high':
-        return <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-200">উচ্চ</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black border border-amber-500/20">উচ্চ</span>;
       case 'medium':
-        return <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-black border border-blue-200">সাধারণ</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-black border border-blue-500/20">সাধারণ</span>;
       default:
-        return <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200">নিম্ন</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-500/20">নিম্ন</span>;
     }
   };
 
@@ -393,29 +399,29 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
     switch (s) {
       case 'in_progress':
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-bold flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
             {isBn ? 'প্রসেসিং হচ্ছে' : 'In Progress'}
           </span>
         );
       case 'resolved':
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-bold flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
             {isBn ? 'সমাধান হয়েছে' : 'Resolved'}
           </span>
         );
       case 'closed':
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-bold flex items-center gap-1">
+          <span className="px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 text-[11px] font-bold flex items-center gap-1">
             <Clock className="w-3 h-3 text-slate-400" />
             {isBn ? 'বন্ধ' : 'Closed'}
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold flex items-center gap-1">
-            <AlertCircle className="w-3 h-3 text-amber-600" />
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-bold flex items-center gap-1">
+            <AlertCircle className="w-3 h-3 text-amber-500" />
             {isBn ? 'ওপেন' : 'Open'}
           </span>
         );
@@ -440,14 +446,20 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
     }
   };
 
+  // Check if admin has replied or joined
+  const hasAdminJoined = selectedTicket ? selectedTicket.messages.some(m => m.sender === 'admin') : false;
+
   return (
-    <div className="max-w-6xl mx-auto space-y-4 pb-12">
+    <div className={isFullscreen 
+      ? "fixed inset-0 z-50 bg-slate-100 dark:bg-slate-950 p-2 sm:p-4 flex flex-col h-screen w-screen overflow-hidden" 
+      : "w-full max-w-7xl mx-auto flex flex-col h-[calc(100dvh-72px)] sm:h-[calc(100dvh-82px)] gap-2 sm:gap-3"
+    }>
       
       {/* Toast Alert Banner for Admin Reply */}
       {toastAlert && (
         <div className="fixed top-20 right-4 left-4 sm:left-auto sm:w-96 z-50 animate-in slide-in-from-top-3 duration-300">
-          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-emerald-500/40 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <div className="bg-slate-900 text-white p-4 rounded-3xl shadow-2xl border border-emerald-500/40 flex items-start gap-3 backdrop-blur-xl">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
               <Headphones className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
@@ -473,7 +485,7 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                 }}
                 className="mt-2 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1"
               >
-                <span>{isBn ? 'টিকিট খুলুন' : 'Open Ticket'}</span>
+                <span>{isBn ? 'লাইভ চ্যাট খুলুন' : 'Open Live Chat'}</span>
                 <ChevronRight className="w-3 h-3" />
               </button>
             </div>
@@ -482,26 +494,26 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
       )}
 
       {/* Top Header Bar */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 sm:p-5 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 shadow-sm shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
               title={isBn ? 'ফিরে যান' : 'Back'}
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-black uppercase">
-                  <Headphones className="w-3 h-3" />
-                  <span>SUPPORT HELPDESK</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>LIVE MESSENGER CHAT</span>
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">• {isBn ? '২৪/৭ অফিসিয়াল সাপোর্ট' : '24/7 Official Support'}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">• {isBn ? '২৪/৭ অফিসিয়াল সাপোর্ট' : '24/7 Official Support'}</span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 mt-0.5">
-                <span>{isBn ? 'সাপোর্ট টিকিট ও হেল্পডেস্ক' : 'Support Tickets & Helpdesk'}</span>
+              <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 mt-0.5">
+                <span>{isBn ? 'সাপোর্ট টিকিট ও লাইভ হেল্পডেস্ক' : 'Support Tickets & Live Helpdesk'}</span>
                 <FacebookVerifiedBadge size="sm" />
               </h1>
             </div>
@@ -510,13 +522,27 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 sm:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+              title={isFullscreen ? (isBn ? 'স্বাভাবিক ভিউ' : 'Exit Full Screen') : (isBn ? 'ফুল স্ক্রিন' : 'Full Screen')}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <Maximize2 className="w-4 h-4" />
+              )}
+              <span className="hidden md:inline">{isFullscreen ? (isBn ? 'ছোট করুন' : 'Exit') : (isBn ? 'ফুল স্ক্রিন' : 'Full Screen')}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => fetchTickets()}
               disabled={isRefreshing}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+              className="p-2 sm:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer flex items-center gap-1.5 text-xs font-bold"
               title={isBn ? 'রিফ্রেশ করুন' : 'Refresh Tickets'}
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
-              <span className="hidden sm:inline">{isBn ? 'রিফ্রেশ' : 'Refresh'}</span>
+              <span className="hidden md:inline">{isBn ? 'রিফ্রেশ' : 'Refresh'}</span>
             </button>
 
             <button
@@ -525,53 +551,55 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                 setIsCreatingTicket(true);
                 setSelectedTicketId(null);
               }}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs sm:text-sm transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/20 active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>{isBn ? '+ নতুন টিকিট পাঠান' : '+ Open New Ticket'}</span>
+              <span>{isBn ? '+ নতুন টিকিট' : '+ New Ticket'}</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Container: Messenger-style layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[640px] items-stretch">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 w-full h-full">
         
         {/* Left Column: Tickets Inbox & List (4 cols on lg) */}
-        <div className={`lg:col-span-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex flex-col overflow-hidden shadow-2xs ${selectedTicketId || isCreatingTicket ? 'hidden lg:flex' : 'flex'}`}>
+        <div className={`lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 flex flex-col overflow-hidden shadow-sm h-full min-h-0 ${selectedTicketId || isCreatingTicket ? 'hidden lg:flex' : 'flex'}`}>
           
           {/* Inbox Header & Search */}
-          <div className="p-3.5 border-b border-slate-200/80 dark:border-slate-700 space-y-2.5">
+          <div className="p-3 sm:p-4 border-b border-slate-200/80 dark:border-slate-800 space-y-2.5 shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Inbox className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{isBn ? 'আপনার টিকিটসমূহ' : 'My Tickets'}</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300">
-                  {tickets.length}
-                </span>
+              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <Inbox className="w-3.5 h-3.5" />
+                </div>
+                <span>{isBn ? 'আপনার টিকিটসমূহ' : 'Conversations'}</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                {tickets.length}
               </span>
             </div>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={isBn ? 'টিকিট আইডি বা বিষয় খুঁজুন...' : 'Search ticket ID or subject...'}
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white"
+                placeholder={isBn ? 'টিকিট আইডি বা বিষয় খুঁজুন...' : 'Search conversation or ID...'}
+                className="w-full pl-9.5 pr-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white transition-all"
               />
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-slate-50 dark:bg-slate-900 rounded-xl">
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl">
               <button
                 type="button"
                 onClick={() => setActiveTab('all')}
-                className={`flex-1 py-1 text-[11px] font-black rounded-lg transition ${
+                className={`flex-1 py-1.5 text-[11px] font-black rounded-xl transition ${
                   activeTab === 'all'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 }`}
               >
@@ -580,9 +608,9 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('in_progress')}
-                className={`flex-1 py-1 text-[11px] font-black rounded-lg transition ${
+                className={`flex-1 py-1.5 text-[11px] font-black rounded-xl transition ${
                   activeTab === 'in_progress'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 }`}
               >
@@ -591,9 +619,9 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('resolved')}
-                className={`flex-1 py-1 text-[11px] font-black rounded-lg transition ${
+                className={`flex-1 py-1.5 text-[11px] font-black rounded-xl transition ${
                   activeTab === 'resolved'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 }`}
               >
@@ -603,15 +631,17 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
           </div>
 
           {/* Tickets Scroll List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60 max-h-[580px]">
+          <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
             {filteredTickets.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
-                <MessageSquare className="w-10 h-10 mx-auto opacity-30 mb-2" />
-                <p className="text-xs font-bold text-slate-500">{isBn ? 'কোনো সাপোর্ট টিকিট পাওয়া যায়নি' : 'No tickets found'}</p>
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                  <MessageSquare className="w-6 h-6" />
+                </div>
+                <p className="text-xs font-bold text-slate-500">{isBn ? 'কোনো সাপোর্ট টিকিট পাওয়া যায়নি' : 'No conversations found'}</p>
                 <button
                   type="button"
                   onClick={() => setIsCreatingTicket(true)}
-                  className="mt-3 text-xs font-black text-emerald-600 hover:underline"
+                  className="mt-3 text-xs font-black text-emerald-600 dark:text-emerald-400 hover:underline"
                 >
                   {isBn ? '+ একটি নতুন টিকিট খুলুন' : '+ Create a new ticket'}
                 </button>
@@ -626,39 +656,50 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                   <button
                     key={ticket.id}
                     onClick={() => handleSelectTicket(ticket.id)}
-                    className={`w-full text-left p-3.5 transition cursor-pointer flex flex-col gap-1.5 ${
+                    className={`w-full text-left p-4 transition cursor-pointer flex flex-col gap-1.5 relative ${
                       isSelected
-                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-l-4 border-l-emerald-600'
-                        : 'hover:bg-slate-50/80 dark:hover:bg-slate-700/30'
+                        ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-l-4 border-l-emerald-500'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-[11px] font-black text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400">#{ticket.id}</span>
-                        {ticket.unreadByUser && (
-                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" title="New admin message"></span>
-                        )}
-                      </span>
-                      <span className="text-[10px] text-slate-400 shrink-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="relative">
+                          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                            <Headphones className="w-4 h-4" />
+                          </div>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 absolute -bottom-0.5 -right-0.5"></span>
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1 truncate">
+                            <span className="font-mono text-emerald-600 dark:text-emerald-400">#{ticket.id}</span>
+                            {ticket.unreadByUser && (
+                              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-ping"></span>
+                            )}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block truncate">
+                            {getCategoryLabel(ticket.category)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] text-slate-400 shrink-0 font-medium">
                         {formatTicketDate(ticket.updatedAt)}
                       </span>
                     </div>
 
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5">
                       {ticket.subject}
                     </h4>
 
                     {lastMsg && (
-                      <p className={`text-[11px] truncate flex items-center gap-1 ${isAdminLast ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-500'}`}>
-                        {isAdminLast && <ShieldCheck className="w-3 h-3 shrink-0" />}
-                        <span>{lastMsg.message}</span>
+                      <p className={`text-[11px] truncate flex items-center gap-1.5 ${isAdminLast ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {isAdminLast ? <Headphones className="w-3 h-3 shrink-0 text-emerald-500" /> : <CheckCheck className="w-3 h-3 shrink-0 text-slate-400" />}
+                        <span className="truncate">{lastMsg.message}</span>
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        {getCategoryLabel(ticket.category)}
-                      </span>
+                    <div className="flex items-center justify-end mt-1">
                       {getStatusBadge(ticket.status)}
                     </div>
                   </button>
@@ -669,22 +710,22 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
         </div>
 
         {/* Right Column: Messenger Conversation View or Compose Form (8 cols on lg) */}
-        <div className={`lg:col-span-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex flex-col overflow-hidden shadow-2xs ${!selectedTicketId && !isCreatingTicket ? 'hidden lg:flex' : 'flex'}`}>
+        <div className={`lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 flex flex-col overflow-hidden shadow-sm h-full min-h-0 ${!selectedTicketId && !isCreatingTicket ? 'hidden lg:flex' : 'flex'}`}>
           
           {/* View Mode 1: Creating a New Ticket */}
           {isCreatingTicket ? (
-            <div className="p-5 sm:p-7 flex-1 overflow-y-auto space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="p-4 sm:p-6 flex-1 min-h-0 overflow-y-auto space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
                     <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                      {isBn ? 'নতুন সাপোর্ট টিকিট তৈরি করুন' : 'Create New Support Ticket'}
+                      {isBn ? 'নতুন সাপোর্ট টিকিট ও লাইভ চ্যাট' : 'Open Support Ticket & Live Chat'}
                     </h2>
-                    <p className="text-xs text-slate-500">
-                      {isBn ? 'আমাদের ডেডিকেটেড সাপোর্ট টিম সরাসরি আপনার সহায়তা করবে' : 'Our official support specialists will review and assist promptly'}
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isBn ? 'আমাদের অফিসিয়াল সাপোর্ট টিম সরাসরি আপনার চ্যাটে যুক্ত হবেন' : 'Our official support specialists will join the chat promptly'}
                     </p>
                   </div>
                 </div>
@@ -692,7 +733,7 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCreatingTicket(false)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                  className="p-2 rounded-2xl text-slate-400 hover:text-slate-600 dark:hover:text-white bg-slate-100 dark:bg-slate-800 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -709,7 +750,7 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                     value={subject}
                     onChange={e => setSubject(e.target.value)}
                     placeholder={isBn ? 'যেমন: বিকাশ ডিপোজিট ব্যালেন্সে যোগ হয়নি (TrxID BK...)' : 'e.g. Deposit not credited via bKash'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white"
                   />
                 </div>
 
@@ -721,7 +762,7 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                     <select
                       value={category}
                       onChange={e => setCategory(e.target.value as any)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+                      className="w-full px-3.5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold dark:text-white"
                     >
                       <option value="deposit">{isBn ? 'ডিপোজিট সমস্যা (Deposit)' : 'Deposit Issue'}</option>
                       <option value="withdrawal">{isBn ? 'উত্তোলন ও পেমেন্ট (Withdrawal)' : 'Withdrawal Issue'}</option>
@@ -739,7 +780,7 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                     <select
                       value={priority}
                       onChange={e => setPriority(e.target.value as any)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+                      className="w-full px-3.5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold dark:text-white"
                     >
                       <option value="low">{isBn ? 'সাধারণ (Low)' : 'Low'}</option>
                       <option value="medium">{isBn ? 'মাঝারি (Medium)' : 'Medium'}</option>
@@ -755,11 +796,11 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                   </label>
                   <textarea
                     required
-                    rows={6}
+                    rows={4}
                     value={message}
                     onChange={e => setMessage(e.target.value)}
                     placeholder={isBn ? 'আপনার সমস্যার বিস্তারিত লিখুন (যেমন: পেমেন্ট নম্বর, TrxID, তারিখ ইত্যাদি)...' : 'Describe your issue in detail (account number, TrxID, timestamps, etc.)...'}
-                    className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white leading-relaxed resize-none"
+                    className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white leading-relaxed resize-none"
                   ></textarea>
                 </div>
 
@@ -767,105 +808,137 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsCreatingTicket(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                    className="px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     {isBn ? 'বাতিল' : 'Cancel'}
                   </button>
                   <button
                     type="submit"
                     disabled={isSending}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
-                    <span>{isSending ? (isBn ? 'পাঠানো হচ্ছে...' : 'Submitting...') : (isBn ? 'টিকিট জমা দিন' : 'Submit Ticket')}</span>
+                    <span>{isSending ? (isBn ? 'শুরু হচ্ছে...' : 'Starting...') : (isBn ? 'লাইভ চ্যাট শুরু করুন' : 'Start Live Chat')}</span>
                   </button>
                 </div>
               </form>
             </div>
           ) : selectedTicket ? (
             
-            // View Mode 2: Messenger Conversation Interface
-            <div className="flex flex-col h-full min-h-[580px]">
+            // View Mode 2: Modern Messenger Live Chat Interface
+            <div className="flex flex-col h-full min-h-0 flex-1 overflow-hidden">
               
-              {/* Conversation Top Header Bar */}
-              <div className="p-3.5 sm:p-4 border-b border-slate-200/80 dark:border-slate-700 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/40">
+              {/* Messenger Header Bar */}
+              <div className="p-3 sm:p-4 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md shrink-0">
                 
                 {/* Back to list button on mobile */}
                 <button
                   type="button"
                   onClick={() => setSelectedTicketId(null)}
-                  className="lg:hidden p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600"
+                  className="lg:hidden p-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">
-                      #{selectedTicket.id}
-                    </span>
-                    {getPriorityBadge(selectedTicket.priority)}
-                    {getStatusBadge(selectedTicket.status)}
+                {/* Agent / Room Info */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="relative">
+                    <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20 shrink-0">
+                      <Headphones className="w-4 sm:w-5 h-4 sm:h-5" />
+                    </div>
+                    <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 absolute -bottom-0.5 -right-0.5 shadow-sm"></span>
                   </div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate mt-0.5">
-                    {selectedTicket.subject}
-                  </h3>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
+                        Amader Job Support
+                      </h3>
+                      <FacebookVerifiedBadge size="sm" />
+                      <span className="font-mono text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-md">
+                        #{selectedTicket.id}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        {hasAdminJoined ? (isBn ? 'অ্যাডমিন যুক্ত আছেন (Active)' : 'Admin Online & Active') : (isBn ? 'অফিসিয়াল হেল্পডেস্ক (Active)' : 'Active Helpdesk')}
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate hidden sm:inline">• {selectedTicket.subject}</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Status action toggle */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   {selectedTicket.status === 'resolved' || selectedTicket.status === 'closed' ? (
                     <button
                       type="button"
                       onClick={() => handleUpdateStatus(selectedTicket.id, 'open')}
-                      className="px-3 py-1.5 rounded-xl border border-emerald-300 text-emerald-700 dark:text-emerald-400 text-xs font-black hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-1 cursor-pointer transition"
+                      className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black hover:bg-emerald-500/20 flex items-center gap-1 cursor-pointer transition"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>{isBn ? 'পুনরায় ওপেন করুন' : 'Re-open'}</span>
+                      <span>{isBn ? 'রি-ওপেন' : 'Re-open'}</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => handleUpdateStatus(selectedTicket.id, 'resolved')}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-black hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-slate-700 flex items-center gap-1 cursor-pointer transition"
+                      className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer transition"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{isBn ? 'সমাধান চিহ্নিত করুন' : 'Mark Resolved'}</span>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="hidden sm:inline">{isBn ? 'সমাধান হয়েছে' : 'Mark Resolved'}</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Message Feed / Messenger Body */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 max-h-[440px] bg-slate-50/20 dark:bg-slate-900/20">
+              {/* Messenger Chat Body */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 bg-slate-50/40 dark:bg-slate-950/40">
                 
-                {/* Official Desk Greeting Banner */}
-                <div className="text-center py-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-[11px] font-bold text-slate-500 dark:text-slate-300">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{isBn ? 'অফিসিয়াল সাপোর্ট টিম এনক্রিপ্টেড চ্যাট' : 'Official Helpdesk Conversation'}</span>
+                {/* 1. Official Helpdesk Conversation Header Pill */}
+                <div className="flex flex-col items-center justify-center gap-1.5 py-2">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 shadow-2xs">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{isBn ? 'অফিসিয়াল সিকিউর হেল্পডেস্ক চ্যাট' : 'Official Encrypted Helpdesk'}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {formatTicketDate(selectedTicket.createdAt)}
                   </span>
                 </div>
 
-                {/* Messages Loop */}
+                {/* 2. Admin Joined Live Banner Pill (Requested by user) */}
+                {hasAdminJoined && (
+                  <div className="flex justify-center my-3 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                      <Headphones className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>{isBn ? '🟢 অ্যাডমিন সাপোর্ট স্পেশালিস্ট চ্যাটে যুক্ত হয়েছেন' : '🟢 Admin Support Agent has joined the chat'}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Messages Flow (Messenger-style Rounded Bubbles) */}
                 {selectedTicket.messages.map((msg, idx) => {
                   const isAdmin = msg.sender === 'admin';
 
                   return (
                     <div
                       key={msg.id || idx}
-                      className={`flex gap-3 items-end ${isAdmin ? 'justify-start' : 'justify-end'}`}
+                      className={`flex gap-2.5 items-end ${isAdmin ? 'justify-start' : 'justify-end'} group`}
                     >
                       {/* Admin Avatar on Left */}
                       {isAdmin && (
-                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mb-4">
+                        <div className="w-8 h-8 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20 mb-1">
                           <Headphones className="w-4 h-4" />
                         </div>
                       )}
 
-                      <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${isAdmin ? 'items-start' : 'items-end'}`}>
+                      <div className={`flex flex-col max-w-[85%] sm:max-w-[70%] ${isAdmin ? 'items-start' : 'items-end'}`}>
+                        
                         {/* Sender Label */}
-                        <span className="text-[10px] font-black text-slate-400 mb-1 px-1 flex items-center gap-1">
+                        <div className="text-[10px] font-bold text-slate-400 mb-1 px-1 flex items-center gap-1">
                           {isAdmin ? (
                             <>
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold">Amader Job Support</span>
@@ -874,29 +947,29 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                           ) : (
                             <span>{user.name}</span>
                           )}
-                        </span>
+                        </div>
 
-                        {/* Speech Bubble */}
+                        {/* Messenger Styled Speech Bubble */}
                         <div
                           className={`p-3.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
                             isAdmin
-                              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 rounded-2xl rounded-tl-xs shadow-xs'
-                              : 'bg-emerald-600 text-white rounded-2xl rounded-tr-xs shadow-xs'
+                              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-700/80 rounded-3xl rounded-bl-sm shadow-sm'
+                              : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-3xl rounded-br-sm shadow-md shadow-emerald-600/15 font-medium'
                           }`}
                         >
                           {msg.message}
                         </div>
 
-                        {/* Timestamp */}
-                        <span className="text-[10px] text-slate-400 mt-1 px-1 flex items-center gap-1">
+                        {/* Timestamp & Status Icon */}
+                        <div className="text-[10px] text-slate-400 mt-1 px-1 flex items-center gap-1">
                           <span>{formatMessageTime(msg.timestamp)}</span>
-                          {!isAdmin && <CheckCheck className="w-3 h-3 text-emerald-600" />}
-                        </span>
+                          {!isAdmin && <CheckCheck className="w-3.5 h-3.5 text-emerald-500" />}
+                        </div>
                       </div>
 
                       {/* User Avatar on Right */}
                       {!isAdmin && (
-                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0 font-black text-xs mb-4">
+                        <div className="w-8 h-8 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0 font-black text-xs mb-1 shadow-2xs">
                           {user.name ? user.name[0].toUpperCase() : 'U'}
                         </div>
                       )}
@@ -907,13 +980,13 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Bottom Messenger Composer */}
-              <div className="p-3 sm:p-4 border-t border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2.5">
+              {/* Bottom Messenger Floating Action Bar */}
+              <div className="p-3 sm:p-4 border-t border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md space-y-2.5">
                 
                 {selectedTicket.status === 'resolved' || selectedTicket.status === 'closed' ? (
-                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-center text-xs text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>{isBn ? 'এই টিকিটটি সমাধান হয়েছে। বার্তা পাঠাতে পুনরায় ওপেন করুন।' : 'This ticket is marked resolved. Click Re-open to send a message.'}</span>
+                  <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-center text-xs text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>{isBn ? 'এই চ্যাটটি সমাধান হয়েছে। পুনরায় কথা বলতে "রি-ওপেন" ক্লিক করুন।' : 'This chat is marked resolved. Click Re-open to send a message.'}</span>
                   </div>
                 ) : (
                   <>
@@ -924,18 +997,18 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                           key={i}
                           type="button"
                           onClick={() => setReplyMessage(chip)}
-                          className="shrink-0 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300 transition"
+                          className="shrink-0 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300 transition-all border border-transparent hover:border-emerald-500/20 active:scale-95"
                         >
                           {chip}
                         </button>
                       ))}
                     </div>
 
-                    {/* Chat Textarea Form */}
-                    <form onSubmit={handleSendReply} className="flex items-end gap-2">
-                      <div className="flex-1 relative">
+                    {/* Messenger Chat Input Bar */}
+                    <form onSubmit={handleSendReply} className="flex items-center gap-2">
+                      <div className="flex-1 flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
                         <textarea
-                          rows={2}
+                          rows={1}
                           value={replyMessage}
                           onChange={e => setReplyMessage(e.target.value)}
                           onKeyDown={e => {
@@ -944,15 +1017,28 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
                               handleSendReply(e);
                             }
                           }}
-                          placeholder={isBn ? 'মেসেজ লিখুন (Enter চেপে পাঠান)...' : 'Type your message (Press Enter to send)...'}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden dark:text-white leading-relaxed resize-none"
+                          placeholder={isBn ? 'একটি মেসেজ লিখুন (Enter চেপে পাঠান)...' : 'Type a message...'}
+                          className="flex-1 py-2 bg-transparent text-xs sm:text-sm focus:outline-hidden dark:text-white leading-relaxed resize-none max-h-24"
                         />
+
+                        {/* Quick Thumbs Up / Reaction Button */}
+                        {!replyMessage.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => handleSendReply(undefined, '👍')}
+                            className="p-2 text-emerald-500 hover:text-emerald-600 transition cursor-pointer active:scale-110"
+                            title="Send Thumbs Up"
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
 
+                      {/* Send Action Button */}
                       <button
                         type="submit"
                         disabled={!replyMessage.trim()}
-                        className="p-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition disabled:opacity-40 cursor-pointer shadow-xs shrink-0"
+                        className="w-11 h-11 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-emerald-500/20 shrink-0 flex items-center justify-center active:scale-95"
                         title={isBn ? 'মেসেজ পাঠান' : 'Send Message'}
                       >
                         <Send className="w-4 h-4" />
@@ -965,21 +1051,21 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
           ) : (
             // Empty Selection State
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mb-3">
-                <MessageSquare className="w-7 h-7" />
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3 shadow-inner">
+                <MessageSquare className="w-8 h-8" />
               </div>
-              <h3 className="text-sm font-black text-slate-700 dark:text-slate-200">
-                {isBn ? 'একটি টিকিট নির্বাচন করুন' : 'Select a ticket'}
+              <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+                {isBn ? 'একটি লাইভ চ্যাট নির্বাচন করুন' : 'Select a conversation'}
               </h3>
               <p className="text-xs text-slate-400 max-w-sm mt-1">
-                {isBn ? 'বাম পাশের তালিকা থেকে একটি টিকিট নির্বাচন করুন অথবা নতুন টিকিট খুলুন।' : 'Choose a ticket from the left panel to view conversation or open a new ticket.'}
+                {isBn ? 'বাম পাশের তালিকা থেকে একটি টিকিট নির্বাচন করুন অথবা নতুন চ্যাট শুরু করুন।' : 'Choose a ticket from the left panel to view conversation or start a new live chat.'}
               </p>
               <button
                 type="button"
                 onClick={() => setIsCreatingTicket(true)}
-                className="mt-4 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black shadow-xs hover:bg-emerald-700 transition"
+                className="mt-5 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-black shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-teal-700 transition active:scale-95"
               >
-                {isBn ? '+ নতুন টিকিট পাঠান' : '+ Open New Ticket'}
+                {isBn ? '+ নতুন লাইভ চ্যাট শুরু করুন' : '+ Start New Live Chat'}
               </button>
             </div>
           )}
@@ -988,3 +1074,4 @@ export const SupportTicketPage: React.FC<SupportTicketPageProps> = ({
     </div>
   );
 };
+

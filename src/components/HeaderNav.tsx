@@ -151,13 +151,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   return (
     <>
       {/* 
-        GLASSMORPHIC STICKY HEADER:
-        Backdrop-blur-xl with clean frosted glass feel 
+        GLASSMORPHIC FROSTED GLASS HEADER:
+        Backdrop-blur-2xl with translucent background for real frosted glass effect on scroll
       */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/85 border-b border-slate-200/80 shadow-xs transition-colors duration-200 w-full max-w-full overflow-x-clip">
+      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-white/75 backdrop-saturate-150 border-b border-slate-200/60 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-all duration-200 w-full max-w-full overflow-x-clip">
         
         {/* VIP International Top Status Bar */}
-        <div className="bg-slate-950 text-slate-300 py-1 px-3 sm:px-6 lg:px-8 border-b border-slate-800/90 text-[11px] hidden md:block">
+        <div className="bg-slate-950/90 backdrop-blur-md text-slate-300 py-1 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 text-[11px] hidden md:block">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="inline-flex items-center gap-1 font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 text-[10px] tracking-wider">
@@ -444,24 +444,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                     <span>{language === 'en' ? 'বাংলা' : 'EN'}</span>
                   </button>
 
-                  {/* Side Menu Toggle Button */}
-                  <button
-                    id="header-side-menu-toggle-btn"
-                    onClick={() => setDrawerOpen(true)}
-                    className="w-7.5 h-7.5 sm:w-9 sm:h-9 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0 active:scale-95 shadow-2xs"
-                    title={isBn ? 'সাইড মেনু' : 'Side Menu'}
-                    aria-label="Open Side Menu"
-                  >
-                    <Menu className="w-4 h-4 text-slate-700" />
-                  </button>
-
-                  {/* User Profile Avatar with Online Dot */}
+                  {/* Profile Side Menu Trigger (Avatar with online indicator) */}
                   <button
                     id="header-user-avatar-drawer-btn"
                     onClick={() => setDrawerOpen(true)}
-                    className="relative cursor-pointer transition-transform hover:scale-105 active:scale-95 shrink-0 focus:outline-hidden"
-                    title={user.name}
-                    aria-label="Open Profile Menu"
+                    className="relative cursor-pointer transition-transform hover:scale-105 active:scale-95 shrink-0 focus:outline-hidden ring-2 ring-emerald-500/20 rounded-full"
+                    title={user.name ? `${user.name} - Profile Menu` : 'Profile Menu'}
+                    aria-label="Open Profile Side Menu"
                   >
                     <img
                       src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
