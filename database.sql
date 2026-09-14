@@ -22,9 +22,8 @@ CREATE TABLE `admins` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default Admin Account (Username: admin, Email: admin@amaderjob.com, Password: admin123456)
-INSERT INTO `admins` (`id`, `username`, `email`, `password_hash`, `role`) VALUES
-(1, 'admin', 'admin@amaderjob.com', '$2y$10$5M8y2lT0h9n6N4rZ1uO4yeiF7pX0vH6aB7e8r3j2k1m4q5w6e7r8u', 'superadmin');
+-- Admin account creation must be done securely via backend/CLI using password_hash() and password_verify().
+
 
 -- --------------------------------------------------------
 -- Table: settings (Website, App & SMTP Configurations)
