@@ -60,11 +60,6 @@ function admin_login(string $emailOrUser, string $password): array {
         }
 
         $passwordMatches = password_verify($password, $admin['password_hash']);
-        if (!$passwordMatches && ($password === $admin['password_hash'] || ($admin['username'] === 'admin' && $password === 'admin123456'))) {
-            $passwordMatches = true;
-            $newHash = password_hash($password, PASSWORD_DEFAULT);
-            $db->prepare("UPDATE admins SET password_hash = ? WHERE id = ?")->execute([$newHash, $admin['id']]);
-        }
 
         if (!$passwordMatches) {
             return ['success' => false, 'error' => 'Invalid email/username or password.'];

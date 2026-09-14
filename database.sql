@@ -39,33 +39,32 @@ CREATE TABLE `settings` (
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Amader Job Online'),
 ('site_name_bn', 'আমাদের জব অনলাইন'),
-('site_subtitle', 'Leading Micro Task & Freelance Platform in Bangladesh'),
-('site_subtitle_bn', 'বাংলাদেশের বিশ্বস্ত মাইক্রো টাস্ক ও ফ্রিল্যান্সিং প্ল্যাটফর্ম'),
-('logo_url', '/assets/logo.png'),
-('domain', 'https://amaderjob.com'),
-('support_email', 'support@amaderjob.com'),
+('site_subtitle', 'Leading Micro Task & Freelance Platform'),
+('site_subtitle_bn', 'বিশ্বস্ত মাইক্রো টাস্ক ও ফ্রিল্যান্সিং প্ল্যাটফর্ম'),
+('logo_url', '/assets/logo.svg'),
+('support_email', 'support@example.com'),
 ('whatsapp_number', '+8801700000000'),
 ('helpline_phone', '+8801800000000'),
 ('min_deposit_bdt', '50.00'),
 ('min_withdraw_bdt', '100.00'),
 ('usd_to_bdt_rate', '120.00'),
-('notice_marquee', '🔥 Welcome to Amader Job Online! Complete micro tasks, follow social channels and earn real BDT daily. Fast automated payouts via bKash, Nagad & Rocket!'),
-('notice_marquee_bn', '🔥 স্বাগতম আমাদের জব অনলাইন প্ল্যাটফর্মে! প্রতিদিন ছোট ছোট কাজ করে সরাসরি বিকাশ ও নগদে পেমেন্ট নিন। যেকোনো প্রয়োজনে হেল্পলাইনে যোগাযোগ করুন।'),
+('notice_marquee', '🔥 Welcome to Amader Job Online! Complete micro tasks and earn real BDT daily. Fast automated payouts!'),
+('notice_marquee_bn', '🔥 স্বাগতম আমাদের জব অনলাইন প্ল্যাটফর্মে! ছোট ছোট কাজ করে পেমেন্ট নিন।'),
 ('maintenance_mode', '0'),
 ('deposit_bonus_percent', '5'),
-('seo_meta_title', 'Amader Job Online - আমাদের জব | Micro Task & Freelance Platform in Bangladesh'),
-('seo_meta_description', 'বাংলাদেশের শীর্ষ মাইক্রো-টাস্ক ও ফ্রিল্যান্সিং প্ল্যাটফর্ম। ছোট ছোট কাজ সম্পন্ন করে সরাসরি বিকাশ ও নগদে প্রতিদিন টাকা আয় করুন।'),
-('seo_keywords', 'Amader Job, আমাদের জব, micro job bangladesh, online income bd, freelance micro tasks, earn money online bangladesh, bkash cashout income, daily task earning, microjob bahubal'),
+('seo_meta_title', 'Amader Job Online - Micro Task & Freelance Platform'),
+('seo_meta_description', 'Top micro-task and freelance platform. Complete small tasks and earn daily.'),
+('seo_keywords', 'Amader Job, micro job, online income bd, freelance micro tasks'),
 ('seo_og_image', '/assets/logo.svg'),
 ('google_site_verification', ''),
 ('bing_site_verification', ''),
 ('email_verification_enabled', '1'),
-('smtp_host', 'mail.amaderjob.com'),
+('smtp_host', 'mail.example.com'),
 ('smtp_port', '587'),
-('smtp_username', 'info@amaderjob.com'),
+('smtp_username', 'info@example.com'),
 ('smtp_password', ''),
 ('smtp_encryption', 'tls'),
-('smtp_from_email', 'info@amaderjob.com'),
+('smtp_from_email', 'info@example.com'),
 ('smtp_from_name', 'Amader Job'),
 ('tpl_password_reset_subject', 'Amader Job - Password Reset Code'),
 ('tpl_password_reset_body', 'Your password reset OTP is: {{otp}}. Valid for 5 minutes.'),
@@ -113,13 +112,6 @@ CREATE TABLE `users` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Initial Demo Users
-INSERT INTO `users` (`id`, `uid`, `name`, `email`, `phone`, `password_hash`, `role`, `avatar`, `earning_balance_bdt`, `deposit_balance_bdt`, `earning_balance_usd`, `deposit_balance_usd`, `completed_tasks_count`, `posted_jobs_count`, `satisfaction_rate`, `level`, `is_verified`, `has_blue_badge`, `blue_badge_plan`, `referral_code`, `referred_users_count`, `referral_earnings_bdt`, `daily_streak`) VALUES
-(1, '84920173', 'Md. Rafiul Islam', 'rafi2377a@amaderjob.com', '01712345678', '$2y$10$5M8y2lT0h9n6N4rZ1uO4yeiF7pX0vH6aB7e8r3j2k1m4q5w6e7r8u', 'worker', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 1250.00, 500.00, 10.42, 4.17, 34, 3, 99.20, 'Gold', 1, 1, 'yearly', '84920173', 42, 1260.00, 7),
-(2, '71938204', 'Tanjim Ahmed', 'tanjim@example.com', '01811223344', '$2y$10$5M8y2lT0h9n6N4rZ1uO4yeiF7pX0vH6aB7e8r3j2k1m4q5w6e7r8u', 'worker', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', 3820.00, 200.00, 31.83, 1.67, 142, 1, 99.50, 'Platinum', 1, 1, 'yearly', '71938204', 128, 3840.00, 12),
-(3, '58204917', 'Fatima Akter', 'fatima@example.com', '01922334455', '$2y$10$5M8y2lT0h9n6N4rZ1uO4yeiF7pX0vH6aB7e8r3j2k1m4q5w6e7r8u', 'worker', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', 3240.00, 0.00, 27.00, 0.00, 118, 0, 98.80, 'Gold', 1, 1, 'monthly', '58204917', 94, 2820.00, 9),
-(4, '39482015', 'Nayeem Hasan', 'nayeem@example.com', '01633445566', '$2y$10$5M8y2lT0h9n6N4rZ1uO4yeiF7pX0vH6aB7e8r3j2k1m4q5w6e7r8u', 'worker', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', 2910.00, 450.00, 24.25, 3.75, 96, 2, 97.40, 'Gold', 1, 0, NULL, '39482015', 73, 2190.00, 5);
-
 -- --------------------------------------------------------
 -- Table: jobs
 -- --------------------------------------------------------
@@ -153,11 +145,6 @@ CREATE TABLE `jobs` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `jobs` (`id`, `title`, `title_bn`, `category`, `category_name`, `category_name_bn`, `employer_id`, `employer_name`, `employer_avatar`, `employer_verified`, `pay_per_task_bdt`, `pay_per_task_usd`, `total_slots`, `completed_slots`, `estimated_minutes`, `target_link`, `description`, `description_bn`, `instructions_json`, `rules_json`, `proof_requirements_json`, `featured`, `status`) VALUES
-('job_1', 'Subscribe YouTube Channel & Watch 2 Minutes', 'ইউটিউব চ্যানেল সাবস্ক্রাইব করুন এবং ২ মিনিট ভিডিও দেখুন', 'youtube', 'YouTube', 'ইউটিউব', 'emp_101', 'TechReview BD', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100', 1, 12.50, 0.10, 500, 342, 3, 'https://youtube.com', 'Watch 2 mins, like video and subscribe channel.', 'ভিডিওটি ২ মিনিট দেখুন, লাইক দিন এবং সাবস্ক্রাইব করুন।', '["Search channel name on YouTube", "Watch any latest video for at least 2 minutes", "Subscribe and click bell icon"]', '["No bot accounts allowed", "Do not unsubscribe within 30 days"]', '["Channel screenshot showing subscribed button", "Your YouTube channel name"]', 1, 'active'),
-('job_2', 'Install & Sign Up on bKash / Fintech Android App', 'অ্যান্ড্রয়েড অ্যাপ ইনস্টল এবং সাইন আপ করুন', 'app_download', 'App Install', 'অ্যাপ ইনস্টল', 'emp_102', 'AppDev Global', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100', 1, 35.00, 0.29, 200, 89, 7, 'https://play.google.com', 'Download app, complete initial registration.', 'গুগল প্লে স্টোর থেকে অ্যাপ ডাউনলোড করে সাইন আপ করুন।', '["Open Play Store link", "Download app", "Sign up with your phone or email"]', '["One submission per phone/IP", "Must keep app for 24 hours"]', '["Profile screenshot inside app", "Account registered phone number"]', 1, 'active'),
-('job_3', 'Follow Facebook Official Page & Like 3 Posts', 'ফেসবুক পেজ ফলো এবং ৩টি পোস্টে লাইক দিন', 'facebook', 'Facebook', 'ফেসবুক', 'emp_103', 'Organic Fashion BD', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100', 1, 8.00, 0.07, 1000, 680, 2, 'https://facebook.com', 'Follow page and like 3 recent posts.', 'পেজ ফলো দিন এবং সাম্প্রতিক ৩টি পোস্টে লাইক দিন।', '["Go to Facebook page", "Click Follow and Like", "Like 3 most recent posts"]', '["Profile must be genuine with profile picture"]', '["Screenshot showing Followed status", "Your Facebook profile link"]', 0, 'active');
-
 -- --------------------------------------------------------
 -- Table: task_submissions
 -- --------------------------------------------------------
@@ -177,10 +164,6 @@ CREATE TABLE `task_submissions` (
   `earned_usd` DECIMAL(10,2) NOT NULL,
   `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `task_submissions` (`id`, `job_id`, `worker_id`, `worker_name`, `worker_avatar`, `proof_text`, `proof_url`, `status`, `earned_bdt`, `earned_usd`) VALUES
-('sub_1', 'job_1', '84920173', 'Md. Rafiul Islam', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 'Completed youtube subscription. Channel name: Rafiul Tech.', 'https://imgur.com/example1', 'approved', 12.50, 0.10),
-('sub_2', 'job_2', '84920173', 'Md. Rafiul Islam', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 'Installed app and signed up with 01712345678.', 'https://imgur.com/example2', 'pending', 35.00, 0.29);
 
 -- --------------------------------------------------------
 -- Table: wallet_transactions
@@ -202,11 +185,6 @@ CREATE TABLE `wallet_transactions` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `wallet_transactions` (`id`, `user_id`, `type`, `title`, `title_bn`, `amount_bdt`, `amount_usd`, `method`, `account_number`, `trx_id`, `status`) VALUES
-('tx_1', '84920173', 'deposit', 'Deposit via bKash', 'বিকাশ ডিপোজিট', 500.00, 4.17, 'bkash', '01712345678', 'BK9827163', 'completed'),
-('tx_2', '84920173', 'task_earning', 'Earned from YouTube Task', 'ইউটিউব টাস্ক থেকে আয়', 12.50, 0.10, NULL, NULL, NULL, 'completed'),
-('tx_3', '84920173', 'withdrawal', 'Withdrawal to Nagad', 'নগদ ক্যাশআউট', 300.00, 2.50, 'nagad', '01712345678', 'NG5519283', 'pending');
-
 -- --------------------------------------------------------
 -- Table: support_tickets
 -- --------------------------------------------------------
@@ -226,9 +204,6 @@ CREATE TABLE `support_tickets` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `support_tickets` (`id`, `user_id`, `user_name`, `user_email`, `subject`, `category`, `priority`, `status`, `unread_user`, `unread_admin`) VALUES
-('TCK-78419', '84920173', 'Md. Rafiul Islam', 'rafi2377a@amaderjob.com', 'Deposit balance not updated via bKash', 'deposit', 'high', 'in_progress', 1, 0);
-
 -- --------------------------------------------------------
 -- Table: ticket_messages
 -- --------------------------------------------------------
@@ -241,10 +216,6 @@ CREATE TABLE `ticket_messages` (
   `message` TEXT NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `ticket_messages` (`ticket_id`, `sender`, `sender_name`, `message`) VALUES
-('TCK-78419', 'user', 'Md. Rafiul Islam', 'Hello, I deposited 500 BDT using bKash TrxID BK9827163 20 minutes ago.'),
-('TCK-78419', 'admin', 'Support Team', 'We received your ticket. Our finance team is reviewing your transaction ID now.');
 
 -- --------------------------------------------------------
 -- Table: notifications
@@ -261,10 +232,6 @@ CREATE TABLE `notifications` (
   `is_read` TINYINT(1) DEFAULT 0,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `notifications` (`id`, `user_id`, `title`, `title_bn`, `message`, `message_bn`, `type`, `is_read`) VALUES
-('notif_1', '84920173', 'Welcome to Amader Job!', 'আমাদের জব-এ স্বাগতম!', 'Complete your profile and start micro jobs now.', 'আপনার প্রোফাইল সম্পন্ন করুন এবং কাজ শুরু করুন।', 'system', 0),
-('notif_2', '84920173', 'Deposit Confirmed', 'ডিপোজিট সফল', 'Your bKash deposit of 500 BDT was approved.', 'আপনার ৫০০ টাকা বিকাশ ডিপোজিট অনুমোদিত হয়েছে।', 'wallet', 0);
 
 -- --------------------------------------------------------
 -- Table: password_resets

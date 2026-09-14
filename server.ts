@@ -669,19 +669,20 @@ async function startServer() {
 
   // Dynamic Settings Endpoint
   app.get('/api/settings', (req: Request, res: Response) => {
+    const appUrl = process.env.APP_URL || 'https://microjob.bahubal.com';
     res.json({
       success: true,
-      app_url: 'https://microjob.bahubal.com',
+      app_url: appUrl,
       settings: {
         site_name: 'Amader Job Online',
         site_name_bn: 'আমাদের জব অনলাইন',
-        site_subtitle: 'Leading Micro Task & Freelance Platform in Bangladesh',
-        site_subtitle_bn: 'বাংলাদেশের বিশ্বস্ত মাইক্রো টাস্ক প্ল্যাটফর্ম',
-        logo_url: '/assets/logo.png',
-        site_logo: '/assets/logo.png',
-        site_favicon: '/favicon.ico',
-        domain: 'https://microjob.bahubal.com',
-        support_email: 'support@amaderjob.com',
+        site_subtitle: 'Leading Micro Task & Freelance Platform',
+        site_subtitle_bn: 'বিশ্বস্ত মাইক্রো টাস্ক প্ল্যাটফর্ম',
+        logo_url: '/assets/logo.svg',
+        site_logo: '/assets/logo.svg',
+        site_favicon: '/favicon.svg',
+        domain: appUrl,
+        support_email: 'support@example.com',
         whatsapp_number: '+8801700000000',
         helpline_phone: '+8801800000000',
         min_deposit_bdt: '50.00',
