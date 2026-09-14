@@ -90,25 +90,7 @@ export const LandingHeroView: React.FC<LandingHeroViewProps> = ({
   return (
     <div className="space-y-12 sm:space-y-16 py-4 sm:py-8">
       
-      {/* 1. Live Platform Activity Ticker */}
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center gap-2.5 overflow-hidden text-xs font-bold shadow-2xs">
-          <span className="flex h-2.5 w-2.5 relative shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
-          </span>
-          <span className="font-extrabold text-emerald-700 uppercase tracking-wide text-[10px] shrink-0 bg-emerald-200/70 px-2 py-0.5 rounded-md">
-            {isBn ? 'লাইভ অ্যাক্টিভিটি' : 'Live Activity'}
-          </span>
-          <div className="truncate text-slate-700 text-xs">
-            {isBn 
-              ? 'সুমন মাত্র ৳২৫০ উইথড্র করেছেন (বিকাশ) • Digital Growth BD ৳৫,০০০ ডিপোজিট করেছেন • তানভীর ৩৩তম রেফারেল বোনাস পেয়েছেন • আকাশ ইউটিউব টাস্ক সম্পন্ন করেছেন'
-              : 'Sumon cashed out ৳250 via bKash • Digital Growth deposited ৳5,000 • Tanvir earned ৳50 referral bonus • Akash completed task'}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Top Hero Section */}
+      {/* Top Hero Section */}
       <section className="text-center max-w-4xl mx-auto px-4 space-y-6 pt-1">
         
         {/* Brand Logo & Trust Tag */}
@@ -305,49 +287,49 @@ export const LandingHeroView: React.FC<LandingHeroViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                    {isBn ? 'টপ রেফারার (Top Refer)' : 'Top Referrers'}
+                    {isBn ? 'টপ রেফারার প্রোগ্রাম' : 'Top Referral Program'}
                   </h3>
                   <p className="text-[11px] text-emerald-700 font-semibold">
-                    {isBn ? 'প্রতি রেফারে ৫০৳ বোনাস' : '৳50 bonus per referral'}
+                    {isBn ? 'প্রতি রেফারে ৫০৳ বোনাস + ৫% লাইফটাইম কমিশন' : '৳50 bonus + 5% lifetime commission'}
                   </p>
                 </div>
               </div>
               <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                {isBn ? 'সাপ্তাহিক লিডার' : 'Weekly Leaders'}
+                {isBn ? 'সাপ্তাহিক প্রাইজ' : 'Weekly Rewards'}
               </span>
             </div>
 
             <div className="space-y-2.5">
               <div className="p-3 rounded-2xl bg-white border border-emerald-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-black text-xs flex items-center justify-center">1</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-900">Tanvir Ahmed</span>
+                  <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-black text-xs flex items-center justify-center">🥇</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900">{isBn ? '১ম স্থান নগদ পুরস্কার' : '1st Place Cash Prize'}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs text-emerald-700">342 Referrals</p>
-                  <p className="text-[10px] text-slate-400">৳17,100 BDT</p>
+                  <p className="font-black text-xs text-emerald-700">+৳৮০ বোনাস</p>
+                  <p className="text-[10px] text-slate-400">Weekly Top 1</p>
                 </div>
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-emerald-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center">2</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-900">Mahmudul Hasan</span>
+                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center">🥈</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900">{isBn ? '২য় স্থান নগদ পুরস্কার' : '2nd Place Cash Prize'}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs text-emerald-700">289 Referrals</p>
-                  <p className="text-[10px] text-slate-400">৳14,450 BDT</p>
+                  <p className="font-black text-xs text-emerald-700">+৳৪০ বোনাস</p>
+                  <p className="text-[10px] text-slate-400">Weekly Top 2</p>
                 </div>
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-emerald-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-800 font-black text-xs flex items-center justify-center">3</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-900">Sabbir Hossain</span>
+                  <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-800 font-black text-xs flex items-center justify-center">🥉</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900">{isBn ? '৩য় স্থান নগদ পুরস্কার' : '3rd Place Cash Prize'}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs text-emerald-700">215 Referrals</p>
-                  <p className="text-[10px] text-slate-400">৳10,750 BDT</p>
+                  <p className="font-black text-xs text-emerald-700">+৳২০ বোনাস</p>
+                  <p className="text-[10px] text-slate-400">Weekly Top 3</p>
                 </div>
               </div>
             </div>
@@ -362,49 +344,49 @@ export const LandingHeroView: React.FC<LandingHeroViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                    {isBn ? 'টপ ডিপোজিটর (Top Deposit)' : 'Top Depositors'}
+                    {isBn ? 'বায়ার ও এমপ্লয়ার ডিপোজিট' : 'Employer Deposits'}
                   </h3>
                   <p className="text-[11px] text-blue-700 font-semibold">
-                    {isBn ? 'শীর্ষ বায়ার ও এজেন্সিসমূহ' : 'Leading Employers'}
+                    {isBn ? '১০০% রিয়েল ট্রাফিক ও দ্রুত রেজাল্ট' : '100% Real Traffic & Fast Results'}
                   </p>
                 </div>
               </div>
               <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">
-                {isBn ? 'ভেরিফাইড বায়ার' : 'Verified Buyers'}
+                {isBn ? 'ইনস্ট্যান্ট অ্যাক্টিভেশন' : 'Instant Activation'}
               </span>
             </div>
 
             <div className="space-y-2.5">
               <div className="p-3 rounded-2xl bg-white border border-blue-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-black text-xs flex items-center justify-center">1</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-900">Digital Growth BD</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-800 font-black text-xs flex items-center justify-center">⚡</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900">{isBn ? 'স্বয়ংক্রিয় ডিপোজিট' : 'Auto Gateway Deposit'}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs text-blue-700">৳185,000 BDT</p>
-                  <p className="text-[10px] text-slate-400">164 Campaigns</p>
+                  <p className="font-black text-xs text-blue-700">bKash / Nagad</p>
+                  <p className="text-[10px] text-slate-400">Instant Balance</p>
                 </div>
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-blue-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center">2</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-900">Apex Media Agency</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-800 font-black text-xs flex items-center justify-center">🔒</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900">{isBn ? 'সুরক্ষিত এসক্রো সিস্টেম' : 'Escrow Protected'}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs text-blue-700">৳142,000 BDT</p>
-                  <p className="text-[10px] text-slate-400">118 Campaigns</p>
+                  <p className="font-black text-xs text-blue-700">100% Secure</p>
+                  <p className="text-[10px] text-slate-400">Pay only for valid proofs</p>
                 </div>
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-blue-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-800 font-black text-xs flex items-center justify-center">3</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-900">TechSolutions Hub</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-800 font-black text-xs flex items-center justify-center">🚀</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900">{isBn ? 'ক্যাম্পেইন বুস্টিং' : 'Job Campaign Boost'}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-xs text-blue-700">৳98,000 BDT</p>
-                  <p className="text-[10px] text-slate-400">87 Campaigns</p>
+                  <p className="font-black text-xs text-blue-700">2x - 5x Speed</p>
+                  <p className="text-[10px] text-slate-400">Featured Pinning</p>
                 </div>
               </div>
             </div>

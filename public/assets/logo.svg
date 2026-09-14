@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120" fill="none">
+  <defs>
+    <!-- Background Gradient for App Icon Badge -->
+    <linearGradient id="ajBadgeGrad" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#00E599"/>
+      <stop offset="45%" stopColor="#00C47E"/>
+      <stop offset="100%" stopColor="#008E5B"/>
+    </linearGradient>
+
+    <!-- Checkmark Gold Gradient -->
+    <linearGradient id="ajGoldGrad" x1="45" y1="50" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFDE43"/>
+      <stop offset="60%" stopColor="#F59E0B"/>
+      <stop offset="100%" stopColor="#D97706"/>
+    </linearGradient>
+
+    <!-- Head Gold Radial Gradient -->
+    <radialGradient id="ajHeadGrad" cx="60" cy="38" r="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFF275"/>
+      <stop offset="60%" stopColor="#FBBF24"/>
+      <stop offset="100%" stopColor="#D97706"/>
+    </radialGradient>
+
+    <!-- Job Text Emerald Gradient -->
+    <linearGradient id="ajJobTextGrad" x1="300" y1="30" x2="450" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#00D287"/>
+      <stop offset="100%" stopColor="#00875A"/>
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="ajBadgeShadow" x="0" y="0" width="130" height="130" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#006C44" floodOpacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- ICON BADGE -->
+  <g filter="url(#ajBadgeShadow)">
+    <!-- Rounded Rectangle Badge -->
+    <rect x="10" y="10" width="100" height="100" rx="28" fill="url(#ajBadgeGrad)"/>
+    <!-- Top inner glass highlight -->
+    <path d="M14 38C14 22.536 26.536 10 42 10H78C93.464 10 106 22.536 106 38C106 48 95 56 60 56C25 56 14 48 14 38Z" fill="white" fill-opacity="0.2"/>
+  </g>
+
+  <!-- Swoosh Orbit around Pencil/Person -->
+  <path d="M22 76C18 64 24 50 40 44C58 37 84 46 95 62C101 71 98 83 88 88C78 93 54 89 36 82L22 76Z" stroke="#72FDC6" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <path d="M20 74C16 82 25 88 35 91L40 92" stroke="#A7F3D0" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+
+  <!-- White Pen Body / Person Torso -->
+  <path d="M47 50L60 30L73 50L68 76L52 76L47 50Z" fill="white"/>
+  <path d="M52 76L60 88L68 76H52Z" fill="white"/>
+
+  <!-- Golden Head -->
+  <circle cx="60" cy="30" r="8" fill="url(#ajHeadGrad)" stroke="#FFFFFF" stroke-width="2"/>
+
+  <!-- Yellow Checkmark Icon Across Lower Pen -->
+  <path d="M44 65L55 76L80 48L88 56L55 88L36 73L44 65Z" fill="url(#ajGoldGrad)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- BRAND NAME TYPOGRAPHY -->
+  <!-- "Amader" in sleek Dark Slate / High Contrast Black -->
+  <text x="135" y="80" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="64" font-weight="900" fill="#0F172A" letter-spacing="-1.5">Amader</text>
+
+  <!-- "Job" in Vibrant Emerald Gradient -->
+  <text x="365" y="80" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="64" font-weight="900" fill="url(#ajJobTextGrad)" letter-spacing="-1.5">Job</text>
+</svg>

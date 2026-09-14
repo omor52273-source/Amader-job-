@@ -1,13 +1,14 @@
 <?php
 /**
  * Amader Job Online - Production Website Entry Point (cPanel)
- * Injects dynamic APP_URL, Meta tags, and Database Configurations
+ * Injects dynamic APP_URL, SEO Meta tags, Schema.org JSON-LD, and Database Configurations
  */
 
 require_once __DIR__ . '/config/env.php';
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/seo.php';
 
 $appUrl = get_base_app_url();
 $siteName = get_setting('site_name', 'Amader Job Online');
@@ -41,6 +42,29 @@ if ($maintenanceMode && !is_admin_logged_in()) {
     exit;
 }
 
+// Check for dynamic Job SEO
+$jobId = $_GET['job_id'] ?? $_GET['id'] ?? null;
+$jobData = null;
+$seoOptions = [];
+
+if ($jobId) {
+    $db = get_db();
+    if ($db) {
+        try {
+            $stmt = $db->prepare("SELECT * FROM jobs WHERE id = :id AND status = 'active' LIMIT 1");
+            $stmt->execute([':id' => $jobId]);
+            $jobData = $stmt->fetch();
+            if ($jobData) {
+                $seoOptions = [
+                    'title' => $jobData['title'] . ' | ' . $siteName,
+                    'description' => 'টাস্ক রেট: ৳' . number_format($jobData['pay_per_task_bdt'], 2) . '। কাজ সম্পন্ন করে সরাসরি বিকাশ/নগদে পেমেন্ট নিন।',
+                    'type' => 'article'
+                ];
+            }
+        } catch (Exception $e) {}
+    }
+}
+
 // Find built JS and CSS assets dynamically in assets/
 $jsFile = '';
 $cssFile = '';
@@ -58,28 +82,33 @@ if (is_dir($assetsDir)) {
 }
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="bn" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#059669" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
-    <title><?= sanitize_output($siteName) ?> - <?= sanitize_output($siteNameBn) ?></title>
-    <meta name="description" content="<?= sanitize_output($siteSubtitle) ?>" />
-    
-    <!-- Open Graph / SEO using dynamic APP_URL as single source of truth -->
-    <meta property="og:title" content="<?= sanitize_output($siteName) ?> - <?= sanitize_output($siteNameBn) ?>" />
-    <meta property="og:description" content="<?= sanitize_output($siteSubtitle) ?>" />
-    <meta property="og:url" content="<?= sanitize_output($appUrl) ?>" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Render complete SEO Meta Tags -->
+    <?php render_seo_tags($seoOptions); ?>
 
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo-icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/logo-icon.svg" />
+
+    <!-- Google Fonts with Preconnect for Core Web Vitals Optimization -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
+    <!-- Schema.org JSON-LD Structured Data -->
+    <?php 
+    if ($jobData) {
+        render_json_ld('job_posting', $jobData);
+    } else {
+        render_json_ld('website');
+    }
+    ?>
+
     <!-- Dynamic Injected Configuration for Client -->
     <script>
       window.__APP_CONFIG__ = {
@@ -99,7 +128,7 @@ if (is_dir($assetsDir)) {
       <script type="module" crossorigin src="<?= $jsFile ?>"></script>
     <?php endif; ?>
   </head>
-  <body class="font-sans antialiased bg-slate-50 text-slate-900 selection:bg-emerald-500 selection:text-white">
+  <body class="font-sans antialiased bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white min-h-screen">
     <div id="root"></div>
   </body>
 </html>

@@ -54,6 +54,9 @@ import {
   AccountView 
 } from './components/AccountView';
 import { 
+  BlueBadgePage 
+} from './components/BlueBadgePage';
+import { 
   PostJobModal 
 } from './components/PostJobModal';
 import { 
@@ -110,7 +113,8 @@ import {
   INITIAL_NOTIFICATIONS 
 } from './data/initialData';
 import { 
-  StorageService 
+  StorageService,
+  generateUnique8DigitUid
 } from './lib/storage';
 
 import { 
@@ -147,7 +151,7 @@ export default function App() {
 
   const [currency, setCurrency] = useState<Currency>('BDT');
   const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => StorageService.getAuthStatus());
 
   // Entities State with LocalStorage Persistence
   const [user, setUser] = useState<UserProfile>(() => StorageService.getUser() || INITIAL_USER);
@@ -204,11 +208,12 @@ export default function App() {
     } catch (e) {}
   }, []);
 
-  // Sync latest user profile from MySQL database on initial load
+  // Sync latest user profile from MySQL database on initial load if logged in
   useEffect(() => {
     const fetchFreshUser = async () => {
+      if (!isLoggedIn || !user?.uid) return;
       try {
-        const uid = user?.uid || user?.id || '84920173';
+        const uid = user.uid;
         const res = await fetch(`/api/user?uid=${encodeURIComponent(uid)}`);
         if (res.ok) {
           const data = await res.json();
@@ -224,11 +229,13 @@ export default function App() {
       } catch (e) {}
     };
     fetchFreshUser();
-  }, []);
+  }, [isLoggedIn, user?.uid]);
 
   useEffect(() => {
-    StorageService.saveUser(user);
-  }, [user]);
+    if (isLoggedIn && (user?.uid || user?.email || user?.phone)) {
+      StorageService.saveUser(user);
+    }
+  }, [user, isLoggedIn]);
 
   useEffect(() => {
     StorageService.saveJobs(jobs);
@@ -267,30 +274,26 @@ export default function App() {
       amountUSD,
       currency: 'BDT',
       method: method as any,
-      status: 'completed',
+      status: 'pending',
       trxId,
       timestamp: new Date().toISOString(),
-      title: `Deposit via ${method.toUpperCase()}`,
-      titleBn: `${method === 'bkash' ? 'বিকাশ' : 'নগদ'} ডিপোজিট`
+      title: `Deposit via ${method.toUpperCase()} (Pending)`,
+      titleBn: `${method === 'bkash' ? 'বিকাশ' : 'নগদ'} ডিপোজিট (অ্যাডমিন অ্যাপ্রুভাল পেন্ডিং)`
     };
 
     const newNotification: NotificationItem = {
       id: `notif_${Date.now()}`,
       userId: user.id,
-      title: 'Deposit Successful',
-      titleBn: 'ডিপোজিট সফল হয়েছে',
-      message: `৳${amountBDT.toFixed(2)} (${amountUSD.toFixed(2)} USD) credited to your deposit wallet.`,
-      messageBn: `আপনার ডিপোজিট ব্যালেন্সে ৳${amountBDT.toFixed(2)} ($${amountUSD.toFixed(2)}) যোগ হয়েছে।`,
+      title: 'Deposit Request Submitted',
+      titleBn: 'ডিপোজিট রিকোয়েস্ট জমা হয়েছে',
+      message: `৳${amountBDT.toFixed(2)} deposit request with TrxID ${trxId} is pending. Admin will verify and approve.`,
+      messageBn: `৳${amountBDT.toFixed(2)} ডিপোজিট রিকোয়েস্ট (TrxID: ${trxId}) জমা হয়েছে। অ্যাডমিন ভেরিফাই করে অ্যাপ্রুভ করলে ব্যালেন্সে যোগ হবে।`,
       timestamp: new Date().toISOString(),
       isRead: false,
-      type: 'deposit_success'
+      type: 'system'
     };
 
-    setUser(prev => ({
-      ...prev,
-      depositBalanceBDT: prev.depositBalanceBDT + amountBDT,
-      depositBalanceUSD: prev.depositBalanceUSD + amountUSD
-    }));
+    // Note: Deposit balance is NOT added automatically - admin manually approves in backend/admin panel
     setTransactions(prev => [newTx, ...prev]);
     setNotifications(prev => [newNotification, ...prev]);
   };
@@ -628,7 +631,7 @@ export default function App() {
     return { success: true };
   };
 
-  const handleBuyBlueBadge = (plan: 'monthly' | 'yearly', paymentMethod: 'wallet' | 'bkash' | 'nagad' | 'rocket') => {
+  const handleBuyBlueBadge = (plan: 'monthly' | 'yearly', balanceSource: 'deposit' | 'earning' = 'deposit') => {
     const costBDT = plan === 'yearly' ? 800 : 50;
     const costUSD = +(costBDT / 100).toFixed(2);
     const now = new Date();
@@ -645,17 +648,12 @@ export default function App() {
       let newDepositBDT = prev.depositBalanceBDT;
       let newDepositUSD = prev.depositBalanceUSD;
 
-      if (paymentMethod === 'wallet') {
-        if (newDepositBDT >= costBDT) {
-          newDepositBDT -= costBDT;
-          newDepositUSD = Math.max(0, newDepositUSD - costUSD);
-        } else {
-          const remaining = costBDT - newDepositBDT;
-          newDepositBDT = 0;
-          newDepositUSD = 0;
-          newEarningBDT = Math.max(0, newEarningBDT - remaining);
-          newEarningUSD = Math.max(0, newEarningUSD - (remaining / 100));
-        }
+      if (balanceSource === 'deposit') {
+        newDepositBDT = Math.max(0, newDepositBDT - costBDT);
+        newDepositUSD = Math.max(0, +(newDepositBDT / 100).toFixed(2));
+      } else {
+        newEarningBDT = Math.max(0, newEarningBDT - costBDT);
+        newEarningUSD = Math.max(0, +(newEarningBDT / 100).toFixed(2));
       }
 
       return {
@@ -731,14 +729,60 @@ export default function App() {
     setTransactions(prev => [newTx, ...prev]);
   };
 
-  const handleLogin = (email: string, role: UserRole) => {
+  const handleLogin = (emailOrPhone: string, role: UserRole) => {
+    const clean = emailOrPhone.trim().toLowerCase();
+    const existingUsers = StorageService.getUsers();
+    let matched = existingUsers.find(u => 
+      u.email?.toLowerCase() === clean || 
+      u.phone === clean || 
+      u.uid === clean || 
+      u.id === clean
+    );
+
+    if (!matched) {
+      const newUid = generateUnique8DigitUid();
+      matched = {
+        id: newUid,
+        uid: newUid,
+        name: clean.includes('@') ? clean.split('@')[0] : 'User',
+        email: clean.includes('@') ? clean : `${clean}@amaderjob.com`,
+        phone: clean.includes('@') ? '' : clean,
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        role: role,
+        earningBalanceBDT: 0.00,
+        earningBalanceUSD: 0.00,
+        depositBalanceBDT: 0.00,
+        depositBalanceUSD: 0.00,
+        completedTasksCount: 0,
+        postedJobsCount: 0,
+        satisfactionRate: 100,
+        level: 'Bronze',
+        isVerified: false,
+        hasBlueBadge: false,
+        twoFactorEnabled: false,
+        twoFactorPhone: '',
+        kycStatus: 'unverified',
+        referralCode: newUid,
+        referralEarningsBDT: 0.00,
+        referredUsersCount: 0,
+        dailyStreak: 0,
+        lastClaimDate: '',
+        status: 'active',
+        warningCount: 0
+      };
+    } else {
+      if (role) {
+        matched.role = role;
+      }
+    }
+
+    StorageService.saveUser(matched);
+    StorageService.saveAuthStatus(true);
+    setUser(matched);
     setIsLoggedIn(true);
-    setUser(prev => ({
-      ...prev,
-      email,
-      role
-    }));
-    if (role === 'employer') {
+    setAuthModalState({ isOpen: false, mode: 'login' });
+
+    if (matched.role === 'employer' || role === 'employer') {
       setCurrentView('client');
     } else {
       setCurrentView('freelancer');
@@ -746,13 +790,43 @@ export default function App() {
   };
 
   const handleSignup = (name: string, email: string, phone: string, role: UserRole) => {
-    setIsLoggedIn(true);
+    const newUid = generateUnique8DigitUid();
     const signupBonusBDT = 2.00;
     const signupBonusUSD = 0.02;
 
+    const newUser: UserProfile = {
+      id: newUid,
+      uid: newUid,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      role: role,
+      earningBalanceBDT: signupBonusBDT,
+      earningBalanceUSD: signupBonusUSD,
+      depositBalanceBDT: 0.00,
+      depositBalanceUSD: 0.00,
+      completedTasksCount: 0,
+      postedJobsCount: 0,
+      satisfactionRate: 100,
+      level: 'Bronze',
+      isVerified: false,
+      hasBlueBadge: false,
+      twoFactorEnabled: false,
+      twoFactorPhone: phone.trim(),
+      kycStatus: 'unverified',
+      referralCode: newUid,
+      referralEarningsBDT: 0.00,
+      referredUsersCount: 0,
+      dailyStreak: 1,
+      lastClaimDate: new Date().toDateString(),
+      status: 'active',
+      warningCount: 0
+    };
+
     const newTx: WalletTransaction = {
       id: `tx_${Date.now()}`,
-      userId: user.id,
+      userId: newUid,
       type: 'earning',
       amountBDT: signupBonusBDT,
       amountUSD: signupBonusUSD,
@@ -765,7 +839,7 @@ export default function App() {
 
     const newNotif: NotificationItem = {
       id: `notif_${Date.now()}`,
-      userId: user.id,
+      userId: newUid,
       title: 'Welcome Bonus Credited!',
       titleBn: 'সাইনআপ বোনাস যুক্ত হয়েছে!',
       message: '৳2.00 free signup bonus has been added to your earning balance.',
@@ -775,21 +849,13 @@ export default function App() {
       type: 'system'
     };
 
-    setUser(prev => ({
-      ...prev,
-      name,
-      email,
-      phone,
-      role,
-      isVerified: false,
-      kycStatus: 'unverified',
-      kycData: undefined,
-      nidNumber: undefined,
-      earningBalanceBDT: prev.earningBalanceBDT + signupBonusBDT,
-      earningBalanceUSD: prev.earningBalanceUSD + signupBonusUSD
-    }));
+    StorageService.saveUser(newUser);
+    StorageService.saveAuthStatus(true);
+    setUser(newUser);
+    setIsLoggedIn(true);
     setTransactions(prev => [newTx, ...prev]);
     setNotifications(prev => [newNotif, ...prev]);
+    setAuthModalState({ isOpen: false, mode: 'login' });
 
     if (role === 'employer') {
       setCurrentView('client');
@@ -799,7 +865,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    StorageService.clearUser();
     setIsLoggedIn(false);
+    setUser(INITIAL_USER);
     setCurrentView('landing');
   };
 
@@ -1070,7 +1138,7 @@ export default function App() {
             currency={currency}
             jobs={jobs}
             submissions={submissions}
-            onOpenPostJob={() => setIsPostJobModalOpen(true)}
+            onOpenPostJob={() => setCurrentView('create_job')}
             onOpenDeposit={() => setCurrentView('deposit')}
             onViewStatement={() => setIsStatementModalOpen(true)}
             onViewAllJobs={() => setCurrentView('my_jobs')}
@@ -1090,7 +1158,7 @@ export default function App() {
             language={language}
             currency={currency}
             darkMode={darkMode}
-            onOpenPostJob={() => setIsPostJobModalOpen(true)}
+            onOpenPostJob={() => setCurrentView('create_job')}
             onSelectJobForSubmissions={(job) => {
               setSelectedJobForSubmissions(job);
               setCurrentView('submissions_review');
@@ -1259,7 +1327,7 @@ export default function App() {
               }
             }}
             onNavigate={(view) => setCurrentView(view)}
-            onOpenPostJob={() => setIsPostJobModalOpen(true)}
+            onOpenPostJob={() => setCurrentView('create_job')}
             onToggleLanguage={() => setLanguage(prev => prev === 'bn' ? 'en' : 'bn')}
             onLogout={handleLogout}
             onOpenKyc={() => setIsKycModalOpen(true)}
@@ -1270,6 +1338,19 @@ export default function App() {
             onAdminRejectKyc={handleAdminRejectKyc}
             onChangePassword={handleChangePassword}
             onBuyBlueBadge={handleBuyBlueBadge}
+          />
+        )}
+
+        {/* VIEW: Blue Verified Badge (Standalone Page) */}
+        {currentView === 'blue_badge' && (
+          <BlueBadgePage
+            user={user}
+            language={language}
+            currency={currency}
+            onBuyBlueBadge={handleBuyBlueBadge}
+            onOpenDeposit={() => setCurrentView('deposit')}
+            onOpenKyc={() => setIsKycModalOpen(true)}
+            onBack={() => setCurrentView('account')}
           />
         )}
 

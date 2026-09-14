@@ -38,6 +38,7 @@ import {
   AlertCircle,
   Briefcase,
   Users,
+  Plus,
   FileText,
   User as UserIcon,
   HelpCircle,
@@ -157,8 +158,6 @@ export const AccountView: React.FC<AccountViewProps> = ({
   // Blue Badge Modal State
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   const [blueBadgeTab, setBlueBadgeTab] = useState<'buy' | 'nid'>('buy');
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'bkash' | 'nagad' | 'rocket'>('wallet');
-  const [mfsNumber, setMfsNumber] = useState(user.phone || '01733-492811');
   const [isProcessingBadge, setIsProcessingBadge] = useState(false);
   const [badgeSuccessMessage, setBadgeSuccessMessage] = useState('');
 
@@ -177,7 +176,7 @@ export const AccountView: React.FC<AccountViewProps> = ({
   const userRating = 4.9;
   const totalReviewsCount = 36;
 
-  const handlePurchaseBadge = (plan: 'monthly' | 'yearly', method: 'wallet' | 'bkash' | 'nagad' | 'rocket') => {
+  const handlePurchaseBadge = (plan: 'monthly' | 'yearly', method: 'wallet' = 'wallet') => {
     setIsProcessingBadge(true);
     setTimeout(() => {
       setIsProcessingBadge(false);
@@ -1663,98 +1662,88 @@ export const AccountView: React.FC<AccountViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Payment Method */}
-                  <div className="space-y-2">
+                  {/* Wallet Balance Payment Only */}
+                  <div className="space-y-3">
                     <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-                      {isBn ? 'পেমেন্ট মাধ্যম বেছে নিন' : 'Select Payment Method'}
+                      {isBn ? 'পেমেন্ট মাধ্যম (শুধুমাত্র ওয়ালেট ব্যালেন্স)' : 'Payment Method (Wallet Balance Only)'}
                     </label>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {/* Wallet Balance */}
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('wallet')}
-                        className={`p-2.5 rounded-xl border text-center transition cursor-pointer flex flex-col items-center justify-center gap-1 ${
-                          paymentMethod === 'wallet'
-                            ? 'border-blue-600 bg-blue-50 text-blue-700 font-black'
-                            : 'border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300'
-                        }`}
-                      >
-                        <Wallet className="w-4 h-4 text-emerald-600" />
-                        <span className="text-[11px]">{isBn ? 'ওয়ালেট' : 'Wallet'}</span>
-                        <span className="text-[9.5px] text-slate-400 font-mono">৳{(bdtEarning + bdtDeposit).toFixed(0)}</span>
-                      </button>
-
-                      {/* bKash */}
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('bkash')}
-                        className={`p-2.5 rounded-xl border text-center transition cursor-pointer flex flex-col items-center justify-center gap-1 ${
-                          paymentMethod === 'bkash'
-                            ? 'border-[#E2136E] bg-pink-50 text-[#E2136E] font-black'
-                            : 'border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="w-4 h-4 rounded bg-[#E2136E] text-white text-[9px] font-black flex items-center justify-center">৳</div>
-                        <span className="text-[11px]">bKash</span>
-                        <span className="text-[9.5px] text-slate-400">{isBn ? 'বিকাশ' : 'Instant'}</span>
-                      </button>
-
-                      {/* Nagad */}
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('nagad')}
-                        className={`p-2.5 rounded-xl border text-center transition cursor-pointer flex flex-col items-center justify-center gap-1 ${
-                          paymentMethod === 'nagad'
-                            ? 'border-[#F7941D] bg-orange-50 text-[#F7941D] font-black'
-                            : 'border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="w-4 h-4 rounded bg-[#F7941D] text-white text-[9px] font-black flex items-center justify-center">৳</div>
-                        <span className="text-[11px]">Nagad</span>
-                        <span className="text-[9.5px] text-slate-400">{isBn ? 'নগদ' : 'Instant'}</span>
-                      </button>
-
-                      {/* Rocket */}
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('rocket')}
-                        className={`p-2.5 rounded-xl border text-center transition cursor-pointer flex flex-col items-center justify-center gap-1 ${
-                          paymentMethod === 'rocket'
-                            ? 'border-[#8C3494] bg-purple-50 text-[#8C3494] font-black'
-                            : 'border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="w-4 h-4 rounded bg-[#8C3494] text-white text-[9px] font-black flex items-center justify-center">৳</div>
-                        <span className="text-[11px]">Rocket</span>
-                        <span className="text-[9.5px] text-slate-400">{isBn ? 'রকেট' : 'Instant'}</span>
-                      </button>
-                    </div>
-
-                    {/* MFS Phone Number Input if bKash/Nagad/Rocket */}
-                    {paymentMethod !== 'wallet' && (
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5 mt-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-700">
-                            {paymentMethod === 'bkash' ? 'bKash Account' : paymentMethod === 'nagad' ? 'Nagad Account' : 'Rocket Account'}
-                          </span>
-                          <span className="text-slate-400 font-medium">{isBn ? 'পার্সোনাল নম্বর' : 'Personal No.'}</span>
+                    {/* Available Wallet Balance Card */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/80 border border-slate-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                            <Wallet className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-slate-800">
+                              {isBn ? 'আপনার মোট ওয়ালেট ব্যালেন্স' : 'Total Available Balance'}
+                            </span>
+                            <p className="text-[10.5px] text-slate-500">
+                              {isBn ? 'ডিপোজিট ও আর্নিং ব্যালেন্স থেকে কাটা হবে' : 'Deducted from deposit & earnings'}
+                            </p>
+                          </div>
                         </div>
-                        <input
-                          type="text"
-                          value={mfsNumber}
-                          onChange={(e) => setMfsNumber(e.target.value)}
-                          placeholder="017XXXXXXXX"
-                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-hidden focus:border-blue-500"
-                        />
-                        <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
-                          <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                          <span>
-                            {isBn ? 'পেমেন্ট সম্পন্ন হওয়ার সাথে সাথেই স্বয়ংক্রিয়ভাবে নামের পাশে ব্লু ব্যাজ যুক্ত হয়ে যাবে।' : 'Badge will be automatically activated on confirmation.'}
-                          </span>
+
+                        <span className="text-base font-black text-emerald-600 font-mono">
+                          ৳{(bdtEarning + bdtDeposit).toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80 text-[11px]">
+                        <div className="bg-white p-2 rounded-xl border border-slate-200/60">
+                          <span className="text-slate-400 block text-[10px]">{isBn ? 'ডিপোজিট ব্যালেন্স:' : 'Deposit Balance:'}</span>
+                          <span className="font-bold text-slate-800 font-mono">৳{bdtDeposit.toFixed(2)}</span>
+                        </div>
+                        <div className="bg-white p-2 rounded-xl border border-slate-200/60">
+                          <span className="text-slate-400 block text-[10px]">{isBn ? 'আর্নিং ব্যালেন্স:' : 'Earning Balance:'}</span>
+                          <span className="font-bold text-slate-800 font-mono">৳{bdtEarning.toFixed(2)}</span>
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Check if balance is sufficient */}
+                    {(() => {
+                      const requiredCost = selectedPlan === 'yearly' ? 800 : 50;
+                      const totalAvailable = bdtEarning + bdtDeposit;
+                      const isInsufficient = totalAvailable < requiredCost;
+
+                      if (isInsufficient) {
+                        return (
+                          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-2.5">
+                            <div className="flex items-start gap-2 text-amber-800 text-xs">
+                              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              <p className="leading-snug font-medium">
+                                {isBn 
+                                  ? `অপর্যাপ্ত ওয়ালেট ব্যালেন্স! আপনার ব্যালেন্সে আছে ৳${totalAvailable.toFixed(2)} (প্রয়োজন ৳${requiredCost})। ব্লু ব্যাজ কিনতে আগে ব্যালেন্স ডিপোজিট করুন।`
+                                  : `Insufficient wallet balance! Available: ৳${totalAvailable.toFixed(2)} (Required: ৳${requiredCost}). Please deposit funds first.`}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveModal(null);
+                                onOpenWallet('deposit');
+                              }}
+                              className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                            >
+                              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>{isBn ? 'ডিপোজিট পেজে যান' : 'Go to Deposit Page'}</span>
+                            </button>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>
+                            {isBn 
+                              ? 'আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স আছে। কনফার্ম করলেই ব্যাজ চালু হবে।' 
+                              : 'You have sufficient wallet balance. Ready to activate badge.'}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Summary & Pay Action Button */}
@@ -1766,25 +1755,33 @@ export const AccountView: React.FC<AccountViewProps> = ({
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={isProcessingBadge}
-                      onClick={() => handlePurchaseBadge(selectedPlan, paymentMethod)}
-                      className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm transition cursor-pointer shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
-                    >
-                      {isProcessingBadge ? (
-                        <span>{isBn ? 'প্রসেসিং হচ্ছে...' : 'Processing...'}</span>
-                      ) : (
-                        <>
-                          <FacebookVerifiedBadge size="sm" className="text-white fill-white" />
-                          <span>
-                            {selectedPlan === 'yearly' 
-                              ? (isBn ? '৳৮০০ দিয়ে ১ বছরের জন্য সক্রিয় করুন' : 'Pay ৳800 & Activate 1 Year') 
-                              : (isBn ? '৳৫০ দিয়ে ১ মাসের জন্য সক্রিয় করুন' : 'Pay ৳50 & Activate 1 Month')}
-                          </span>
-                        </>
-                      )}
-                    </button>
+                    {(() => {
+                      const requiredCost = selectedPlan === 'yearly' ? 800 : 50;
+                      const totalAvailable = bdtEarning + bdtDeposit;
+                      const isInsufficient = totalAvailable < requiredCost;
+
+                      return (
+                        <button
+                          type="button"
+                          disabled={isProcessingBadge || isInsufficient}
+                          onClick={() => handlePurchaseBadge(selectedPlan, 'wallet')}
+                          className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm transition cursor-pointer shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isProcessingBadge ? (
+                            <span>{isBn ? 'প্রসেসিং হচ্ছে...' : 'Processing...'}</span>
+                          ) : (
+                            <>
+                              <FacebookVerifiedBadge size="sm" className="text-white fill-white" />
+                              <span>
+                                {selectedPlan === 'yearly' 
+                                  ? (isBn ? '৳৮০০ ওয়ালেট থেকে পরিশোধ ও ব্যাজ সক্রিয় করুন' : 'Pay ৳800 from Wallet & Activate 1 Year') 
+                                  : (isBn ? '৳৫০ ওয়ালেট থেকে পরিশোধ ও ব্যাজ সক্রিয় করুন' : 'Pay ৳50 from Wallet & Activate 1 Month')}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

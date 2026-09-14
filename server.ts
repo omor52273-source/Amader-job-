@@ -564,38 +564,7 @@ async function startServer() {
   // ==========================================
   // In-memory support tickets for Preview Mode
   // ==========================================
-  const inMemoryTickets: any[] = [
-    {
-      id: 'TCK-78419',
-      userId: '84920173',
-      userName: 'Md. Rafiul Islam',
-      userEmail: 'rafi2377a@amaderjob.com',
-      subject: 'Deposit balance not updated via bKash',
-      category: 'deposit',
-      priority: 'high',
-      status: 'in_progress',
-      unreadByUser: true,
-      unreadByAdmin: false,
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      updatedAt: new Date().toISOString(),
-      messages: [
-        {
-          id: 'msg-1',
-          sender: 'user',
-          senderName: 'Md. Rafiul Islam',
-          message: 'Hello, I deposited 500 BDT using bKash TrxID BK9827163 20 minutes ago.',
-          timestamp: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: 'msg-2',
-          sender: 'admin',
-          senderName: 'Support Team',
-          message: 'We received your ticket. Our finance team is reviewing your transaction ID now.',
-          timestamp: new Date(Date.now() - 1800000).toISOString()
-        }
-      ]
-    }
-  ];
+  const inMemoryTickets: any[] = [];
 
   app.get('/api/tickets', (req: Request, res: Response) => {
     const userId = (req.query.user_id || req.query.userId || '') as string;
@@ -834,34 +803,17 @@ async function startServer() {
 
   // User status / profile sync
   app.get('/api/user', (req: Request, res: Response) => {
-    const uid = (req.query.uid || req.query.id || '84920173') as string;
+    const uid = (req.query.uid || req.query.id) as string;
+    if (!uid) {
+      res.status(401).json({ success: false, error: 'No authenticated user' });
+      return;
+    }
     res.json({
       success: true,
       user: {
-        id: '1',
+        id: uid,
         uid: uid,
-        name: 'Md. Rafiul Islam',
-        email: 'rafi2377a@amaderjob.com',
-        phone: '01892837482',
-        role: 'user',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        earningBalanceBDT: 485.00,
-        depositBalanceBDT: 810.00,
-        earningBalanceUSD: 4.85,
-        depositBalanceUSD: 8.10,
-        completedTasksCount: 12,
-        postedJobsCount: 2,
-        satisfactionRate: 98.5,
-        level: 'Pro Earner',
-        isVerified: true,
-        hasBlueBadge: true,
-        blueBadgePlan: 'monthly',
-        twoFactorEnabled: false,
-        kycStatus: 'verified',
-        referralCode: '84920173',
-        referralEarningsBDT: 150.00,
-        referredUsersCount: 15,
-        dailyStreak: 7,
+        role: 'worker',
         status: 'active'
       }
     });

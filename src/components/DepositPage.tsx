@@ -87,8 +87,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({
       } catch (err) {}
       setSuccessMsg(
         isBn 
-          ? `৳${calculatedBDT.toFixed(2)} (${method === 'bkash' ? 'বিকাশ' : 'নগদ'}) ডিপোজিট রিকোয়েস্ট সফলভাবে সম্পন্ন হয়েছে!` 
-          : `Deposit of $${parsedUSD.toFixed(2)} (৳${calculatedBDT.toFixed(2)}) via ${method.toUpperCase()} submitted successfully!`
+          ? `৳${calculatedBDT.toFixed(2)} (${method === 'bkash' ? 'বিকাশ' : 'নগদ'}) ডিপোজিট রিকোয়েস্ট জমা হয়েছে! অ্যাডমিন TrxID যাচাই করে অ্যাপ্রুভ করলে আপনার ব্যালেন্সে যুক্ত হবে।` 
+          : `Deposit request of $${parsedUSD.toFixed(2)} (৳${calculatedBDT.toFixed(2)}) via ${method.toUpperCase()} submitted! Admin will verify and approve manually.`
       );
       setTrxId('');
       setSenderNumber('');

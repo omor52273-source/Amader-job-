@@ -2,15 +2,15 @@ import { UserProfile, Job, TaskSubmission, WalletTransaction, NotificationItem, 
 import { INITIAL_USER, INITIAL_USERS, INITIAL_JOBS, INITIAL_SUBMISSIONS, INITIAL_TRANSACTIONS, INITIAL_NOTIFICATIONS, INITIAL_TICKETS, INITIAL_SITE_SETTINGS } from '../data/initialData';
 
 const STORAGE_KEYS = {
-  USER: 'amader_job_v3_user',
-  USERS: 'amader_job_v3_users',
-  SETTINGS: 'amader_job_v3_site_settings',
-  JOBS: 'amader_job_v3_jobs',
-  SUBMISSIONS: 'amader_job_v3_submissions',
-  TRANSACTIONS: 'amader_job_v3_transactions',
-  NOTIFICATIONS: 'amader_job_v3_notifications',
-  TICKETS: 'amader_job_v3_support_tickets',
-  AUTH: 'amader_job_v3_auth'
+  USER: 'amader_job_v4_user',
+  USERS: 'amader_job_v4_users',
+  SETTINGS: 'amader_job_v4_site_settings',
+  JOBS: 'amader_job_v4_jobs',
+  SUBMISSIONS: 'amader_job_v4_submissions',
+  TRANSACTIONS: 'amader_job_v4_transactions',
+  NOTIFICATIONS: 'amader_job_v4_notifications',
+  TICKETS: 'amader_job_v4_support_tickets',
+  AUTH: 'amader_job_v4_auth'
 };
 
 // In-memory fallback dictionary if localStorage quota is exceeded or unavailable
@@ -79,24 +79,31 @@ export function generateUnique8DigitUid(): string {
 }
 
 export const StorageService = {
-  getUser(): UserProfile {
+  getUser(): UserProfile | null {
     try {
       const saved = safeGetItem(STORAGE_KEYS.USER);
       if (saved) {
         const u = JSON.parse(saved);
-        // Ensure 8-digit numeric UID
-        if (!u.uid || !/^\d{8}$/.test(u.uid)) {
-          u.uid = (u.id && /^\d{8}$/.test(u.id)) ? u.id : generateUnique8DigitUid();
-          u.id = u.uid;
-          u.referralCode = u.uid;
-          this.saveUser(u);
+        if (u && (u.email || u.phone || u.id)) {
+          // Ensure 8-digit numeric UID
+          if (!u.uid || !/^\d{8}$/.test(u.uid)) {
+            u.uid = (u.id && /^\d{8}$/.test(u.id)) ? u.id : generateUnique8DigitUid();
+            u.id = u.uid;
+            u.referralCode = u.uid;
+          }
+          return u;
         }
-        return u;
       }
     } catch (e) {
       console.error('StorageService error reading user', e);
     }
-    return INITIAL_USER;
+    return null;
+  },
+  clearUser() {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      safeSetItem(STORAGE_KEYS.AUTH, JSON.stringify(false));
+    } catch (e) {}
   },
   saveUser(user: UserProfile) {
     try {
@@ -110,6 +117,7 @@ export const StorageService = {
         users.push(user);
       }
       safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      safeSetItem(STORAGE_KEYS.AUTH, JSON.stringify(true));
     } catch (e) {
       console.error('StorageService error saving user', e);
     }
@@ -121,16 +129,18 @@ export const StorageService = {
     } catch (e) {
       console.error('StorageService error reading users', e);
     }
-    return INITIAL_USERS;
+    return [];
   },
   saveUsers(users: UserProfile[]) {
     try {
       safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       // Also update primary active user if present
       const activeUser = this.getUser();
-      const updatedActive = users.find(u => u.id === activeUser.id || (u.uid && u.uid === activeUser.uid));
-      if (updatedActive) {
-        safeSetItem(STORAGE_KEYS.USER, JSON.stringify(updatedActive));
+      if (activeUser) {
+        const updatedActive = users.find(u => u.id === activeUser.id || (u.uid && u.uid === activeUser.uid));
+        if (updatedActive) {
+          safeSetItem(STORAGE_KEYS.USER, JSON.stringify(updatedActive));
+        }
       }
     } catch (e) {
       console.error('StorageService error saving users', e);
@@ -235,11 +245,13 @@ export const StorageService = {
   getAuthStatus(): boolean {
     try {
       const saved = safeGetItem(STORAGE_KEYS.AUTH);
-      if (saved !== null) return JSON.parse(saved);
+      if (saved !== null) {
+        return JSON.parse(saved) === true;
+      }
     } catch (e) {
       console.error('StorageService error reading auth', e);
     }
-    return true;
+    return false; // Auto account open is OFF by default
   },
   saveAuthStatus(isAuth: boolean) {
     try {

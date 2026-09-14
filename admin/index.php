@@ -179,6 +179,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $actionMsg = 'Site settings and media updated successfully in MySQL!';
         }
 
+        // Update SEO Settings
+        if ($postAction === 'update_seo_settings') {
+            set_setting('seo_meta_title', trim($_POST['seo_meta_title'] ?? ''));
+            set_setting('seo_meta_description', trim($_POST['seo_meta_description'] ?? ''));
+            set_setting('seo_keywords', trim($_POST['seo_keywords'] ?? ''));
+            set_setting('seo_og_image', trim($_POST['seo_og_image'] ?? ''));
+            set_setting('google_site_verification', trim($_POST['google_site_verification'] ?? ''));
+            set_setting('bing_site_verification', trim($_POST['bing_site_verification'] ?? ''));
+
+            // Handle OG Image File Upload
+            if (isset($_FILES['og_image_file']) && $_FILES['og_image_file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['og_image_file'];
+                $allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+                if (in_array($file['type'], $allowed, true) && $file['size'] <= 3 * 1024 * 1024) {
+                    $uploadsDir = __DIR__ . '/../uploads';
+                    if (!is_dir($uploadsDir)) {
+                        mkdir($uploadsDir, 0755, true);
+                    }
+                    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    $destName = 'og_share_' . time() . '.' . $ext;
+                    $destPath = $uploadsDir . '/' . $destName;
+                    if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                        $webPath = '/uploads/' . $destName;
+                        set_setting('seo_og_image', $webPath);
+                    }
+                }
+            }
+
+            $actionMsg = 'Global SEO & Social Share configurations saved into MySQL!';
+        }
+
         // Update Referral Settings
         if ($postAction === 'update_referral_settings') {
             set_setting('referral_enabled', isset($_POST['referral_enabled']) ? '1' : '0');
@@ -520,6 +551,7 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
             'jobs' => ['label' => 'Jobs Marketplace', 'badge' => (string)$kpiJobs, 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'],
             'tickets' => ['label' => 'Support Tickets', 'badge' => $kpiOpenTickets > 0 ? (string)$kpiOpenTickets : '', 'badgeColor' => 'bg-rose-500', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>'],
             'settings' => ['label' => 'Site Settings', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>'],
+            'seo' => ['label' => 'SEO & Meta Tags', 'badge' => 'SEO', 'badgeColor' => 'bg-emerald-600', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>'],
             'referral' => ['label' => 'Referral System', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>'],
             'smtp' => ['label' => 'SMTP Mailer', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'],
             'security' => ['label' => 'Admin Password', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>'],
@@ -1311,6 +1343,82 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
               </div>
 
               <button type="submit" class="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Save Website Settings</button>
+            </form>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: SEO & META TAGS -->
+        <?php if ($tab === 'seo'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-8 max-w-4xl">
+            <div class="flex items-center justify-between mb-1">
+              <h2 class="text-xl font-black text-white">Search Engine Optimization (SEO) & Social Sharing</h2>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Google & Social Ready</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-8">Manage meta tags, OpenGraph social previews, Twitter cards, and search console verification tokens.</p>
+
+            <form method="POST" action="<?= app_url('admin/index.php?tab=seo') ?>" enctype="multipart/form-data" class="space-y-6">
+              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+              <input type="hidden" name="admin_action" value="update_seo_settings">
+
+              <!-- Meta Title -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Global Meta Title (SEO Title)</label>
+                <input type="text" name="seo_meta_title" value="<?= sanitize_output(get_setting('seo_meta_title', 'Amader Job Online - আমাদের জব | Micro Task & Freelance Platform in Bangladesh')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                <p class="text-[11px] text-slate-400 mt-1">Recommended length: 50–60 characters. Displayed as the primary blue headline in Google search results.</p>
+              </div>
+
+              <!-- Meta Description -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Global Meta Description</label>
+                <textarea name="seo_meta_description" rows="3" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none"><?= sanitize_output(get_setting('seo_meta_description', 'বাংলাদেশের শীর্ষ মাইক্রো-টাস্ক ও ফ্রিল্যান্সিং প্ল্যাটফর্ম। ছোট ছোট কাজ সম্পন্ন করে সরাসরি বিকাশ ও নগদে প্রতিদিন টাকা আয় করুন।')) ?></textarea>
+                <p class="text-[11px] text-slate-400 mt-1">Recommended length: 140–160 characters. Displayed beneath the title in search results.</p>
+              </div>
+
+              <!-- Meta Keywords -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Meta Keywords (Comma separated)</label>
+                <input type="text" name="seo_keywords" value="<?= sanitize_output(get_setting('seo_keywords', 'Amader Job, আমাদের জব, micro job bangladesh, online income bd, freelance micro tasks, earn money online bangladesh, bkash cashout income')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+              </div>
+
+              <!-- Open Graph Social Share Image -->
+              <div class="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">Social Share Image (OpenGraph & Twitter Card - 1200x630px)</label>
+                <div class="flex items-center gap-4">
+                  <img src="<?= sanitize_output(get_setting('seo_og_image', '/assets/logo.svg')) ?>" alt="OG Share Preview" class="h-14 max-w-[200px] object-contain rounded-lg p-1 bg-slate-900 border border-slate-800" onerror="this.src='/assets/logo.svg'">
+                  <div class="text-xs text-slate-400">
+                    <p class="font-medium text-slate-300">Current Share Preview</p>
+                    <p class="text-[11px]">Recommended: PNG/SVG/WebP 1200x630px for high-definition Facebook, WhatsApp & Twitter previews.</p>
+                  </div>
+                </div>
+                <input type="file" name="og_image_file" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+              </div>
+
+              <!-- Search Console Verifications -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Google Search Console Verification Code</label>
+                  <input type="text" name="google_site_verification" value="<?= sanitize_output(get_setting('google_site_verification', '')) ?>" placeholder="e.g. AbC123XyZ..." class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none font-mono text-xs">
+                  <p class="text-[11px] text-slate-400 mt-1">HTML tag content value for Google Search Console.</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Bing Webmaster Verification Code</label>
+                  <input type="text" name="bing_site_verification" value="<?= sanitize_output(get_setting('bing_site_verification', '')) ?>" placeholder="e.g. 1234567890ABCDEF..." class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none font-mono text-xs">
+                  <p class="text-[11px] text-slate-400 mt-1">msvalidate.01 meta content value for Bing.</p>
+                </div>
+              </div>
+
+              <!-- Quick Links for SEO Tools -->
+              <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-wrap items-center gap-4 text-xs text-slate-300">
+                <span class="font-bold text-emerald-400">Live SEO Assets:</span>
+                <a href="<?= app_url('sitemap.xml') ?>" target="_blank" class="hover:text-emerald-400 underline flex items-center gap-1">
+                  <span>📄 sitemap.xml</span>
+                </a>
+                <a href="<?= app_url('robots.txt') ?>" target="_blank" class="hover:text-emerald-400 underline flex items-center gap-1">
+                  <span>🤖 robots.txt</span>
+                </a>
+              </div>
+
+              <button type="submit" class="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Save SEO & Social Settings</button>
             </form>
           </div>
         <?php endif; ?>

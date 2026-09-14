@@ -87,8 +87,8 @@ export const WithdrawPage: React.FC<WithdrawPageProps> = ({
       } catch (err) {}
       setSuccessMsg(
         isBn 
-          ? `৳${parsedBDT} (${method === 'bkash' ? 'বিকাশ' : 'নগদ'}) উইথড্রয়াল রিকোয়েস্ট সফলভাবে গৃহীত হয়েছে! ১৫-৪৫ মিনিটের মধ্যে টাকা পাবেন।` 
-          : `Withdrawal request for ৳${parsedBDT} via ${method.toUpperCase()} submitted! Processing in 15-45 mins.`
+          ? `৳${parsedBDT} (${method === 'bkash' ? 'বিকাশ' : 'নগদ'}) উইথড্রয়াল রিকোয়েস্ট জমা হয়েছে! অ্যাডমিন যাচাই করে ম্যানুয়ালি অ্যাপ্রুভ করবেন।` 
+          : `Withdrawal request for ৳${parsedBDT} via ${method.toUpperCase()} submitted! Admin will verify and approve manually.`
       );
     }, 700);
   };

@@ -12,10 +12,12 @@ import {
   Clock,
   Gift,
   Zap,
-  Info
+  Info,
+  UserPlus
 } from 'lucide-react';
 import { UserProfile, Language, Currency } from '../types';
 import { getReferralUrl } from '../lib/appConfig';
+import { StorageService } from '../lib/storage';
 
 interface TopRankingsViewProps {
   user: UserProfile;
@@ -34,73 +36,6 @@ interface ReferrerRank {
   rewardBDT: number;
   isCurrentUser?: boolean;
 }
-
-const WEEKLY_REFERRERS: ReferrerRank[] = [
-  { 
-    rank: 1, 
-    name: 'তানভীর আহমেদ (Tanvir)', 
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', 
-    referrals: 54, 
-    earningsBDT: 2700, 
-    rewardBDT: 80 
-  },
-  { 
-    rank: 2, 
-    name: 'মাহমুদুল হাসান (Mahmud)', 
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', 
-    referrals: 41, 
-    earningsBDT: 2050, 
-    rewardBDT: 40 
-  },
-  { 
-    rank: 3, 
-    name: 'সাব্বির হোসেন (Sabbir)', 
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', 
-    referrals: 32, 
-    earningsBDT: 1600, 
-    rewardBDT: 20 
-  },
-  { 
-    rank: 4, 
-    name: 'কামরুল ইসলাম (Kamrul)', 
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80', 
-    referrals: 26, 
-    earningsBDT: 1300, 
-    rewardBDT: 0 
-  },
-  { 
-    rank: 5, 
-    name: 'নাঈমুর রহমান (Naimur)', 
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80', 
-    referrals: 21, 
-    earningsBDT: 1050, 
-    rewardBDT: 0 
-  },
-  { 
-    rank: 6, 
-    name: 'রকিবুল ইসলাম (Rokib)', 
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&auto=format&fit=crop&q=80', 
-    referrals: 18, 
-    earningsBDT: 900, 
-    rewardBDT: 0 
-  },
-  { 
-    rank: 7, 
-    name: 'মেহেদী হাসান (Mehedi)', 
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80', 
-    referrals: 15, 
-    earningsBDT: 750, 
-    rewardBDT: 0 
-  },
-  { 
-    rank: 8, 
-    name: 'ফাহিম শাকিল (Fahim)', 
-    avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=100&auto=format&fit=crop&q=80', 
-    referrals: 12, 
-    earningsBDT: 600, 
-    rewardBDT: 0 
-  }
-];
 
 export const TopRankingsView: React.FC<TopRankingsViewProps> = ({
   user,
@@ -123,6 +58,27 @@ export const TopRankingsView: React.FC<TopRankingsViewProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Compute leaderboard from actual registered users
+  const allUsers = StorageService.getUsers();
+  const activeReferrers = allUsers
+    .filter(u => (u.referredUsersCount ?? 0) > 0)
+    .sort((a, b) => (b.referredUsersCount ?? 0) - (a.referredUsersCount ?? 0))
+    .slice(0, 10);
+
+  const weeklyReferrers: ReferrerRank[] = activeReferrers.map((u, idx) => {
+    const rank = idx + 1;
+    const rewardBDT = rank === 1 ? 80 : rank === 2 ? 40 : rank === 3 ? 20 : 0;
+    return {
+      rank,
+      name: u.name,
+      avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
+      referrals: u.referredUsersCount ?? 0,
+      earningsBDT: u.referralEarningsBDT ?? 0,
+      rewardBDT,
+      isCurrentUser: u.id === user.id || u.uid === user.uid
+    };
+  });
 
   const referralCode = (user.uid && /^\d{8}$/.test(user.uid))
     ? user.uid
@@ -279,7 +235,7 @@ export const TopRankingsView: React.FC<TopRankingsViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              UID: <span className="font-mono font-bold text-slate-900">{user.uid || user.id}</span> • {isBn ? 'মোট রেফারেল' : 'Total Referrals'}: <strong className="text-emerald-700">{user.referredUsersCount || 14} জন</strong>
+              UID: <span className="font-mono font-bold text-slate-900">{user.uid || user.id}</span> • {isBn ? 'মোট রেফারেল' : 'Total Referrals'}: <strong className="text-emerald-700">{user.referredUsersCount || 0} জন</strong>
             </p>
           </div>
         </div>
@@ -287,7 +243,7 @@ export const TopRankingsView: React.FC<TopRankingsViewProps> = ({
         <div className="flex items-center gap-3 text-right">
           <div className="bg-white px-3.5 py-2 rounded-xl border border-emerald-200 shadow-xs">
             <span className="text-[10px] text-slate-500 block uppercase font-bold">{isBn ? 'রেফার আয়' : 'Referral Earned'}</span>
-            <span className="text-base font-black text-emerald-700">৳{(user.referralEarningsBDT || 180).toFixed(2)}</span>
+            <span className="text-base font-black text-emerald-700">৳{(user.referralEarningsBDT || 0).toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -307,57 +263,76 @@ export const TopRankingsView: React.FC<TopRankingsViewProps> = ({
         </div>
 
         <div className="divide-y divide-slate-100">
-          {WEEKLY_REFERRERS.map((ranker) => (
-            <div 
-              key={ranker.rank}
-              className={`p-4 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition ${
-                ranker.rank <= 3 ? 'bg-amber-50/30' : ''
-              }`}
-            >
-              <div className="flex items-center gap-3 sm:gap-4">
-                {/* Rank Badge */}
-                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-black text-xs sm:text-sm shrink-0 ${
-                  ranker.rank === 1 ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                  ranker.rank === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300' :
-                  ranker.rank === 3 ? 'bg-orange-100 text-orange-800 border border-orange-300' :
-                  'bg-slate-100 text-slate-600'
-                }`}>
-                  {ranker.rank === 1 ? '🥇' : ranker.rank === 2 ? '🥈' : ranker.rank === 3 ? '🥉' : `#${ranker.rank}`}
-                </div>
-
-                {/* Avatar */}
-                <img 
-                  src={ranker.avatar} 
-                  alt={ranker.name} 
-                  className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
-                />
-
-                {/* Name and Referrals */}
-                <div>
-                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
-                    {ranker.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {isBn ? 'সফল রেফার' : 'Successful Referrals'}: <span className="font-bold text-slate-800">{ranker.referrals} জন</span>
-                  </p>
-                </div>
+          {weeklyReferrers.length === 0 ? (
+            <div className="p-8 text-center space-y-2">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Trophy className="w-6 h-6" />
               </div>
-
-              {/* Reward & Earnings */}
-              <div className="text-right">
-                {ranker.rewardBDT > 0 ? (
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-black text-xs border border-amber-300">
-                    <Gift className="w-3 h-3 text-amber-600" />
-                    <span>+৳{ranker.rewardBDT} {isBn ? 'পুরস্কার' : 'Bonus'}</span>
-                  </div>
-                ) : (
-                  <span className="text-xs font-bold text-slate-400">
-                    ৳{ranker.earningsBDT}
-                  </span>
-                )}
-              </div>
+              <h4 className="font-bold text-sm text-slate-800">
+                {isBn ? 'এখনো কোনো রেফারার তালিকাভুক্ত হননি' : 'No referrers on the leaderboard yet'}
+              </h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {isBn ? 'আপনার রেফারেল লিংক বন্ধুদের মাঝে শেয়ার করুন এবং ১ম স্থান অর্জন করে জিতে নিন আকর্ষণীয় বোনাস!' : 'Share your referral link with friends to claim the #1 spot and win weekly prizes!'}
+              </p>
             </div>
-          ))}
+          ) : (
+            weeklyReferrers.map((ranker) => (
+              <div 
+                key={ranker.rank}
+                className={`p-4 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition ${
+                  ranker.rank <= 3 ? 'bg-amber-50/30' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {/* Rank Badge */}
+                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-black text-xs sm:text-sm shrink-0 ${
+                    ranker.rank === 1 ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                    ranker.rank === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300' :
+                    ranker.rank === 3 ? 'bg-orange-100 text-orange-800 border border-orange-300' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {ranker.rank === 1 ? '🥇' : ranker.rank === 2 ? '🥈' : ranker.rank === 3 ? '🥉' : `#${ranker.rank}`}
+                  </div>
+
+                  {/* Avatar */}
+                  <img 
+                    src={ranker.avatar} 
+                    alt={ranker.name} 
+                    className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
+                  />
+
+                  {/* Name and Referrals */}
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                      <span>{ranker.name}</span>
+                      {ranker.isCurrentUser && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 text-emerald-800">
+                          {isBn ? 'আপনি' : 'You'}
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {isBn ? 'সফল রেফার' : 'Successful Referrals'}: <span className="font-bold text-slate-800">{ranker.referrals} জন</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Reward & Earnings */}
+                <div className="text-right">
+                  {ranker.rewardBDT > 0 ? (
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-black text-xs border border-amber-300">
+                      <Gift className="w-3 h-3 text-amber-600" />
+                      <span>+৳{ranker.rewardBDT} {isBn ? 'পুরস্কার' : 'Bonus'}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-400">
+                      ৳{ranker.earningsBDT}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

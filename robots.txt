@@ -1,0 +1,24 @@
+# robots.txt for Amader Job Online (https://microjob.bahubal.com)
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /jobs
+Allow: /categories
+Allow: /about
+Allow: /terms
+Allow: /privacy
+Allow: /faq
+
+# Disallow private user accounts and admin panels
+Disallow: /admin/
+Disallow: /api/
+Disallow: /uploads/kyc/
+Disallow: /uploads/private/
+Disallow: /includes/
+Disallow: /config/
+Disallow: /*?reset_token=*
+Disallow: /*?token=*
+
+# Host & Sitemap
+Host: https://microjob.bahubal.com
+Sitemap: https://microjob.bahubal.com/sitemap.xml
