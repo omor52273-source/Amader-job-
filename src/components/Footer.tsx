@@ -170,7 +170,7 @@ export const Footer: React.FC<FooterProps> = ({
               </a>
 
               <a 
-                href="https://t.me/amaderjob_official" 
+                href="https://t.me/amaderjobonline" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 hover:bg-sky-50 border border-slate-200 hover:border-sky-300 transition group"
@@ -183,7 +183,7 @@ export const Footer: React.FC<FooterProps> = ({
                     {isBn ? 'টেলিগ্রাম চ্যানেল' : 'Official Telegram'}
                   </span>
                   <span className="font-extrabold text-xs text-slate-900 group-hover:text-sky-700 transition truncate block">
-                    @amaderjob_official
+                    @amaderjobonline
                   </span>
                 </div>
               </a>

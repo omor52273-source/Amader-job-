@@ -77,6 +77,18 @@ export const SignupPage: React.FC<SignupPageProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [devOtpNotice, setDevOtpNotice] = useState('');
+  const [googleLoginEnabled, setGoogleLoginEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.settings && data.settings.google_login_enabled === '1') {
+          setGoogleLoginEnabled(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -324,215 +336,242 @@ export const SignupPage: React.FC<SignupPageProps> = ({
 
         {/* STEP 1: REGISTRATION DETAILS */}
         {step === 'details' && (
-          <form onSubmit={handleProceedToOtp} className="space-y-4">
-            
-            {/* Account Type Selector */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {isBn ? 'অ্যাকাউন্টের ধরন নির্বাচন করুন' : 'Select Account Purpose'}
-              </label>
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80">
-                <button
-                  type="button"
-                  onClick={() => setRole('worker')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    role === 'worker'
-                      ? 'bg-white text-emerald-800 shadow-xs border border-slate-200'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{isBn ? 'ফ্রিল্যান্সার (কাজ করব)' : 'Freelancer'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('employer')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    role === 'employer'
-                      ? 'bg-white text-teal-800 shadow-xs border border-slate-200'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <UserPlus className="w-3.5 h-3.5 text-teal-600" />
-                  <span>{isBn ? 'ক্লায়েন্ট (কাজ দেব)' : 'Employer'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Full Name */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {isBn ? 'আপনার পূর্ণ নাম' : 'Full Name'}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <User className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder={isBn ? 'যেমন: মোঃ রাফি তালুকদার' : 'e.g. John Doe'}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            {/* Email Address (Receives OTP via SMTP) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {isBn ? 'ইমেইল ঠিকানা (এখানে ভেরিফিকেশন ওটিপি যাবে)' : 'Email Address (Verification OTP sent here)'}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="yourname@gmail.com"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-              <p className="text-[11px] text-emerald-700 font-semibold mt-1 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{isBn ? 'ইমেইল SMTP এর মাধ্যমে ওটিপি যাবে (মোবাইল ওটিপি বন্ধ করা হয়েছে)' : 'Verified via Email SMTP (SMS OTP disabled)'}</span>
-              </p>
-            </div>
-
-            {/* Mobile Number (Optional profile / payout field) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {isBn ? 'মোবাইল নম্বর (বিকাশ / নগদ উত্তোলনের জন্য)' : 'Mobile Number (for bKash / Nagad cashout)'}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="017xxxxxxxx"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1">
-                {isBn ? 'পেমেন্ট গ্রহণের জন্য আপনার মোবাইল ওয়ালেট নম্বর দিন।' : 'Enter your mobile wallet number for receiving payout withdrawals.'}
-              </p>
-            </div>
-
-            {/* Password & Confirm Password */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <>
+            <form onSubmit={handleProceedToOtp} className="space-y-4">
+              
+              {/* Account Type Selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {isBn ? 'পাসওয়ার্ড' : 'Password'}
+                  {isBn ? 'অ্যাকাউন্টের ধরন নির্বাচন করুন' : 'Select Account Purpose'}
                 </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900"
-                  />
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                    onClick={() => setRole('worker')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      role === 'worker'
+                        ? 'bg-white text-emerald-800 shadow-xs border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{isBn ? 'ফ্রিল্যান্সার (কাজ করব)' : 'Freelancer'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('employer')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      role === 'employer'
+                        ? 'bg-white text-teal-800 shadow-xs border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-teal-600" />
+                    <span>{isBn ? 'ক্লায়েন্ট (কাজ দেব)' : 'Employer'}</span>
                   </button>
                 </div>
               </div>
 
+              {/* Full Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {isBn ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm Password'}
+                  {isBn ? 'আপনার পূর্ণ নাম' : 'Full Name'}
                 </label>
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900"
-                />
-              </div>
-            </div>
-
-            {/* Referral Code (Optional) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {isBn ? 'রেফারেল কোড (ঐচ্ছিক)' : 'Referral Code (Optional)'}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Share2 className="w-4 h-4" />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={isBn ? 'যেমন: মোঃ রাফি তালুকদার' : 'e.g. John Doe'}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={referralCode}
-                  onChange={e => setReferralCode(e.target.value.toUpperCase())}
-                  placeholder={isBn ? 'যেমন: REF80863' : 'e.g. REF80863'}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 uppercase placeholder:normal-case placeholder:text-slate-400"
-                />
               </div>
-            </div>
 
-            {/* Terms Agreement */}
-            <div className="pt-1">
-              <label className="flex items-start gap-2 cursor-pointer select-none text-xs text-slate-600 font-medium">
-                <input
-                  type="checkbox"
-                  required
-                  checked={agreeTerms}
-                  onChange={e => setAgreeTerms(e.target.checked)}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 mt-0.5"
-                />
-                <span>
-                  {isBn ? 'আমি আমদের জব অনলাইন-এর সকল ' : 'I agree to the '}
-                  <span className="text-emerald-700 font-bold underline">{isBn ? 'শর্তাবলী ও নীতিমালা' : 'Terms & Privacy Policy'}</span>
-                  {isBn ? ' মেনে নিচ্ছি।' : '.'}
-                </span>
-              </label>
-            </div>
-
-            {/* Signup Bonus Highlight */}
-            <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                <Gift className="w-4 h-4" />
+              {/* Email Address (Receives OTP via SMTP) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {isBn ? 'ইমেইল ঠিকানা (এখানে ভেরিফিকেশন ওটিপি যাবে)' : 'Email Address (Verification OTP sent here)'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="yourname@gmail.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                  />
+                </div>
+                <p className="text-[11px] text-emerald-700 font-semibold mt-1 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>{isBn ? 'ইমেইল SMTP এর মাধ্যমে ওটিপি যাবে (মোবাইল ওটিপি বন্ধ করা হয়েছে)' : 'Verified via Email SMTP (SMS OTP disabled)'}</span>
+                </p>
               </div>
-              <div className="text-xs text-emerald-900">
-                <p className="font-extrabold">{isBn ? '৳২.০০ সাইনআপ বোনাস' : '৳2.00 Welcome Bonus'}</p>
-                <p className="text-[11px] text-emerald-700">{isBn ? 'একাউন্ট খোলার সাথে সাথে আর্নিং ব্যালেন্সে যোগ হবে।' : 'Credited instantly upon SMS verification.'}</p>
-              </div>
-            </div>
 
-            {/* Continue to OTP Button */}
-            <button
-              id="signup-step1-btn"
-              type="submit"
-              disabled={loading || isLocked}
-              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.99] text-white font-black text-sm shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{isBn ? 'ইমেইলে ওটিপি পাঠানো হচ্ছে...' : 'Sending Email OTP...'}</span>
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4" />
-                  <span>{isBn ? 'পরবর্তী ধাপ (ইমেইলে ওটিপি পাঠান)' : 'Send Verification OTP to Email'}</span>
-                </>
-              )}
-            </button>
-          </form>
+              {/* Mobile Number (Optional profile / payout field) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {isBn ? 'মোবাইল নম্বর (বিকাশ / নগদ উত্তোলনের জন্য)' : 'Mobile Number (for bKash / Nagad cashout)'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="017xxxxxxxx"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 placeholder:text-slate-400"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {isBn ? 'পেমেন্ট গ্রহণের জন্য আপনার মোবাইল ওয়ালেট নম্বর দিন।' : 'Enter your mobile wallet number for receiving payout withdrawals.'}
+                </p>
+              </div>
+
+              {/* Password & Confirm Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {isBn ? 'পাসওয়ার্ড' : 'Password'}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-3.5 pr-9 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {isBn ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm Password'}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Referral Code (Optional) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {isBn ? 'রেফারেল কোড (ঐচ্ছিক)' : 'Referral Code (Optional)'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={e => setReferralCode(e.target.value.toUpperCase())}
+                    placeholder={isBn ? 'যেমন: REF80863' : 'e.g. REF80863'}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm font-medium text-slate-900 uppercase placeholder:normal-case placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              {/* Terms Agreement */}
+              <div className="pt-1">
+                <label className="flex items-start gap-2 cursor-pointer select-none text-xs text-slate-600 font-medium">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={agreeTerms}
+                    onChange={e => setAgreeTerms(e.target.checked)}
+                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 mt-0.5"
+                  />
+                  <span>
+                    {isBn ? 'আমি আমদের জব অনলাইন-এর সকল ' : 'I agree to the '}
+                    <span className="text-emerald-700 font-bold underline">{isBn ? 'শর্তাবলী ও নীতিমালা' : 'Terms & Privacy Policy'}</span>
+                    {isBn ? ' মেনে নিচ্ছি।' : '.'}
+                  </span>
+                </label>
+              </div>
+
+              {/* Signup Bonus Highlight */}
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Gift className="w-4 h-4" />
+                </div>
+                <div className="text-xs text-emerald-900">
+                  <p className="font-extrabold">{isBn ? '৳২.০০ সাইনআপ বোনাস' : '৳2.00 Welcome Bonus'}</p>
+                  <p className="text-[11px] text-emerald-700">{isBn ? 'একাউন্ট খোলার সাথে সাথে আর্নিং ব্যালেন্সে যোগ হবে।' : 'Credited instantly upon SMS verification.'}</p>
+                </div>
+              </div>
+
+              {/* Continue to OTP Button */}
+              <button
+                id="signup-step1-btn"
+                type="submit"
+                disabled={loading || isLocked}
+                className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.99] text-white font-black text-sm shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>{isBn ? 'ইমেইলে ওটিপি পাঠানো হচ্ছে...' : 'Sending Email OTP...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    <span>{isBn ? 'পরবর্তী ধাপ (ইমেইলে ওটিপি পাঠান)' : 'Send Verification OTP to Email'}</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {googleLoginEnabled && (
+              <div className="mt-4">
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink mx-4 text-xs text-slate-400 uppercase font-semibold tracking-wider">
+                    {isBn ? 'অথবা' : 'Or continue with'}
+                  </span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <a
+                  href="/auth/google_init.php"
+                  className="w-full mt-2 py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-sm shadow-xs transition flex items-center justify-center gap-3 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>{isBn ? 'গুগল দিয়ে সাইন আপ করুন' : 'Continue with Google'}</span>
+                </a>
+              </div>
+            )}
+          </>
         )}
 
         {/* STEP 2: EMAIL OTP VERIFICATION */}

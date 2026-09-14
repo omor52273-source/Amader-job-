@@ -1268,25 +1268,25 @@ export const AccountView: React.FC<AccountViewProps> = ({
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-2">
                 <a
-                  href="https://telegram.org"
+                  href="https://t.me/amaderjobonline"
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-2xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition text-center space-y-1 block"
                 >
                   <Send className="w-5 h-5 text-blue-600 mx-auto" />
                   <p className="font-black text-blue-900">Telegram</p>
-                  <p className="text-[10px] text-blue-600">@MicrojobSupport</p>
+                  <p className="text-[10px] text-blue-600">@amaderjobonline</p>
                 </a>
 
                 <a
-                  href="https://wa.me/8801733492811"
+                  href="https://wa.me/8801331119361"
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition text-center space-y-1 block"
                 >
                   <MessageSquare className="w-5 h-5 text-emerald-600 mx-auto" />
                   <p className="font-black text-emerald-900">WhatsApp</p>
-                  <p className="text-[10px] text-emerald-600">Live Support</p>
+                  <p className="text-[10px] text-emerald-600">+8801331119361</p>
                 </a>
               </div>
 

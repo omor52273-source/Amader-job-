@@ -236,6 +236,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $actionMsg = 'SMTP credentials saved into MySQL settings!';
         }
 
+        // Update Google OAuth Settings
+        if ($postAction === 'update_google_oauth_settings') {
+            set_setting('google_login_enabled', isset($_POST['google_login_enabled']) ? '1' : '0');
+            set_setting('google_client_id', trim($_POST['google_client_id'] ?? ''));
+            $clientSecret = trim($_POST['google_client_secret'] ?? '');
+            if (!empty($clientSecret)) {
+                set_setting('google_client_secret', $clientSecret);
+            }
+            $actionMsg = 'Google OAuth configuration saved successfully in MySQL!';
+        }
+
         // Send Test Email
         if ($postAction === 'test_smtp_email') {
             $testTo = trim($_POST['test_recipient_email'] ?? '');
@@ -554,6 +565,7 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
             'seo' => ['label' => 'SEO & Meta Tags', 'badge' => 'SEO', 'badgeColor' => 'bg-emerald-600', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>'],
             'referral' => ['label' => 'Referral System', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>'],
             'smtp' => ['label' => 'SMTP Mailer', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'],
+            'google_oauth' => ['label' => 'Google Login', 'badge' => get_setting('google_login_enabled', '0') === '1' ? 'ON' : 'OFF', 'badgeColor' => get_setting('google_login_enabled', '0') === '1' ? 'bg-emerald-600' : 'bg-slate-700', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>'],
             'security' => ['label' => 'Admin Password', 'badge' => '', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>'],
         ];
 
@@ -1292,19 +1304,15 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
                 </div>
               </div>
 
-              <!-- Contact Numbers -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div>
-                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Support Email</label>
-                  <input type="email" name="support_email" value="<?= sanitize_output(get_setting('support_email', 'support@amaderjob.com')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
-                </div>
+              <!-- Official Public Contacts -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">WhatsApp Helpline</label>
-                  <input type="text" name="whatsapp_number" value="<?= sanitize_output(get_setting('whatsapp_number', '+8801700000000')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                  <input type="text" name="whatsapp_number" value="<?= sanitize_output(get_setting('whatsapp_number', '+8801331119361')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
                 </div>
                 <div>
-                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Phone Helpline</label>
-                  <input type="text" name="helpline_phone" value="<?= sanitize_output(get_setting('helpline_phone', '+8801800000000')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Telegram Channel / Support URL</label>
+                  <input type="text" name="telegram_url" value="<?= sanitize_output(get_setting('telegram_url', 'https://t.me/amaderjobonline')) ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
                 </div>
               </div>
 
@@ -1541,6 +1549,49 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
               </div>
 
               <button type="submit" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Update Admin Password</button>
+            </form>
+          </div>
+        <?php endif; ?>
+
+        <!-- TAB: GOOGLE OAUTH -->
+        <?php if ($tab === 'google_oauth'): ?>
+          <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl p-8 max-w-2xl">
+            <h2 class="text-xl font-black text-white mb-1">Google OAuth 2.0 Login Configuration</h2>
+            <p class="text-xs text-slate-400 mb-6">Enable secure Google Sign-In for users. Account matching is done safely by verified email address.</p>
+
+            <form method="POST" action="<?= app_url('admin/index.php?tab=google_oauth') ?>" class="space-y-6">
+              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+              <input type="hidden" name="admin_action" value="update_google_oauth_settings">
+
+              <div class="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl">
+                <div>
+                  <span class="text-sm font-bold text-white block">Enable Google Sign-In</span>
+                  <span class="text-xs text-slate-400">Show "Continue with Google" button on login & signup pages</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" name="google_login_enabled" value="1" <?= get_setting('google_login_enabled', '0') === '1' ? 'checked' : '' ?> class="sr-only peer">
+                  <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Google Client ID</label>
+                <input type="text" name="google_client_id" value="<?= sanitize_output(get_setting('google_client_id', '')) ?>" placeholder="e.g. 123456789-abc...apps.googleusercontent.com" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Google Client Secret</label>
+                <input type="password" name="google_client_secret" placeholder="Leave blank to keep unchanged" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Authorized Redirect URI (Copy to Google Cloud Console)</label>
+                <div class="flex items-center gap-2">
+                  <input type="text" readonly value="<?= rtrim(get_base_app_url(), '/') . '/auth/google_callback.php' ?>" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-emerald-400 font-mono text-xs select-all">
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all">Save Google OAuth Settings</button>
             </form>
           </div>
         <?php endif; ?>
